@@ -5,7 +5,8 @@ import { toast } from "react-hot-toast";
 // Import your Modal component
 import Modal from "../components/Modal";
 import ClearSessionButton from "../components/ClearSessionButton"; // Assuming you have this component
-
+import DownloadReportsButton from "../components/DownloadReportsButton";
+import BulkUploadStudents from "../components/BulkUploadStudents";
 // Heroicon Imports - Solid Icons
 import {
   PlusCircleIcon,
@@ -648,7 +649,7 @@ function AdminDashboard({ user, onLogout }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Create Batch Courses Form */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg border border-gray-100">
+          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg border self-start border-gray-100">
             <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
               <BuildingOffice2Icon className="w-6 h-6 mr-3 text-indigo-600" />
               Create Courses for a Batch
@@ -853,6 +854,11 @@ function AdminDashboard({ user, onLogout }) {
                 Add Student
               </button>
             </form>
+            <BulkUploadStudents
+              user={user}
+              config={config}
+              onUploadSuccess={fetchAllStudents}
+            />
           </div>
         </div>
 
@@ -870,6 +876,7 @@ function AdminDashboard({ user, onLogout }) {
             user={user}
             onSessionCleared={handleSessionCleared}
           />
+          <DownloadReportsButton user={user} config={config} />{" "}
         </div>
 
         {/* Courses List (for Admin to see all courses) - Now with Batch Tabs */}
