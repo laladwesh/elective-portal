@@ -10,6 +10,7 @@ const {
   clearAllCourses,
   getMyEnrollments,
   bulkDeleteCourses,
+  getAllEnrollmentsWithDetails,
   createBatchCourses
 } = require('../controllers/courseController');
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
@@ -20,6 +21,7 @@ router.post('/', protect, authorizeRoles('admin'), addCourse);
 router.post('/batch-courses', protect, authorizeRoles('admin'), createBatchCourses); // <--- NEW ROUTE for adding multiple courses for a batch
 router.put('/:id', protect, authorizeRoles('admin'), updateCourse);
 
+router.get('/all-details', protect, authorizeRoles('admin'), getAllEnrollmentsWithDetails);
 // IMPORTANT: Place specific static routes before general dynamic routes
 router.delete('/clear-all', protect, authorizeRoles('admin'), clearAllCourses); // Moved this UP
 router.delete('/bulk-delete', protect, authorizeRoles('admin'), bulkDeleteCourses); // NEW ROUTE
