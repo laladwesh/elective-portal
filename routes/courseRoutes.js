@@ -7,7 +7,9 @@ const {
   setEnrollmentTime,
   enrollInCourse,
   getCourseEnrollments,
+  clearAllCourses,
   getMyEnrollments,
+  bulkDeleteCourses,
   createBatchCourses
 } = require('../controllers/courseController');
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
@@ -17,9 +19,17 @@ const router = express.Router();
 router.post('/', protect, authorizeRoles('admin'), addCourse);
 router.post('/batch-courses', protect, authorizeRoles('admin'), createBatchCourses); // <--- NEW ROUTE for adding multiple courses for a batch
 router.put('/:id', protect, authorizeRoles('admin'), updateCourse);
+
+// IMPORTANT: Place specific static routes before general dynamic routes
+router.delete('/clear-all', protect, authorizeRoles('admin'), clearAllCourses); // Moved this UP
+router.delete('/bulk-delete', protect, authorizeRoles('admin'), bulkDeleteCourses); // NEW ROUTE
+
+// General delete by ID route (comes after more specific delete routes)
 router.delete('/:id', protect, authorizeRoles('admin'), deleteCourse);
+
 router.put('/:id/set-enrollment-time', protect, authorizeRoles('admin'), setEnrollmentTime);
 router.get('/:id/enrollments', protect, authorizeRoles('admin'), getCourseEnrollments);
+
 
 // Student and Admin can get courses (student gets filtered)
 router.get('/', protect, getCourses);
