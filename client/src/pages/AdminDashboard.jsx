@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 
 // Import your Modal component
 import Modal from "../components/Modal";
-
+import ClearSessionButton from "../components/ClearSessionButton";
 // Heroicon Imports - Solid Icons
 import {
   PlusCircleIcon,
@@ -22,8 +22,9 @@ import {
   ClipboardDocumentListIcon, // For viewing enrollments/students
   UserGroupIcon, // For group of students
   TagIcon, // For batch tag
-  // TicketIcon, // For individual course in modal
+  TicketIcon, // For individual course in modal
   PencilSquareIcon, // For edit functionality
+  TrashIcon, // For delete functionality
 } from "@heroicons/react/24/solid";
 
 function AdminDashboard({ user, onLogout }) {
@@ -56,8 +57,7 @@ function AdminDashboard({ user, onLogout }) {
   // NEW: State for Edit Course Modal
   const [isEditCourseModalOpen, setIsEditCourseModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null); // Stores the course object being edited
-  const [editFormData, setEditFormData] = useState({
-    // Stores form data for the edit modal
+  const [editFormData, setEditFormData] = useState({ // Stores form data for the edit modal
     courseName: "",
     batch: "",
     intakeCapacity: "",
@@ -68,6 +68,9 @@ function AdminDashboard({ user, onLogout }) {
   // NEW: State for Course Batch Tabs
   const [activeCourseBatchTab, setActiveCourseBatchTab] = useState("");
 
+  // NEW: State for selected courses for deletion
+  const [selectedCourseIds, setSelectedCourseIds] = useState([]);
+
   // Memoize config for API calls
   const config = useCallback(
     () => ({
@@ -77,6 +80,36 @@ function AdminDashboard({ user, onLogout }) {
     }),
     [user?.token]
   );
+
+  // Helper function to format UTC Date objects to datetime-local string (IST)
+  // This is crucial for displaying the correct time in the edit modal input field.
+  const formatUTCToISTDatetimeLocal = (utcDateString) => {
+    if (!utcDateString) return "";
+
+    const date = new Date(utcDateString);
+
+    // Use Intl.DateTimeFormat to get components in 'Asia/Kolkata' timezone
+    const options = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23', // Ensure 24-hour format for input type="datetime-local"
+      timeZone: 'Asia/Kolkata'
+    };
+
+    const formatter = new Intl.DateTimeFormat('en-CA', options); // 'en-CA' is good for YYYY-MM-DD
+    const parts = formatter.formatToParts(date);
+
+    const year = parts.find(p => p.type === 'year').value;
+    const month = parts.find(p => p.type === 'month').value;
+    const day = parts.find(p => p.type === 'day').value;
+    const hour = parts.find(p => p.type === 'hour').value;
+    const minute = parts.find(p => p.type === 'minute').value;
+
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+  };
 
   // Fetch all courses (for admin's table)
   const fetchCourses = useCallback(async () => {
@@ -244,7 +277,10 @@ function AdminDashboard({ user, onLogout }) {
   };
 
   // --- Modal Specific Functions ---
-
+  const handleSessionCleared = () => {
+      fetchCourses(); // Refresh courses after all data is cleared
+      setSelectedCourseIds([]); // Clear any lingering selections
+  };
   // For Course Enrollments Modal
   const openEnrollmentModal = async (courseId, courseName) => {
     setSelectedCourseId(courseId);
@@ -287,31 +323,29 @@ function AdminDashboard({ user, onLogout }) {
     setActiveStudentBatchTab("");
   };
 
-  // NEW: Functions for Edit Course Modal
+  // Functions for Edit Course Modal
   const openEditCourseModal = (course) => {
     setEditingCourse(course);
     let formattedTime = "";
     if (course.enrollmentOpenTime) {
       const dateObj = new Date(course.enrollmentOpenTime); // This is a UTC Date object
-      if (dateObj.toString() !== "Invalid Date") {
+      if (dateObj.toString() !== 'Invalid Date') {
         // Use Intl.DateTimeFormat to get parts in IST, then construct YYYY-MM-DDTHH:MM
         const options = {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          hourCycle: "h23", // Use 24-hour format
-          timeZone: "Asia/Kolkata",
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23', // Use 24-hour format
+          timeZone: 'Asia/Kolkata'
         };
-        const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(
-          dateObj
-        ); // en-CA gives YYYY-MM-DD order
-        const year = parts.find((p) => p.type === "year").value;
-        const month = parts.find((p) => p.type === "month").value;
-        const day = parts.find((p) => p.type === "day").value;
-        const hour = parts.find((p) => p.type === "hour").value;
-        const minute = parts.find((p) => p.type === "minute").value;
+        const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(dateObj); // en-CA gives YYYY-MM-DD order
+        const year = parts.find(p => p.type === 'year').value;
+        const month = parts.find(p => p.type === 'month').value;
+        const day = parts.find(p => p.type === 'day').value;
+        const hour = parts.find(p => p.type === 'hour').value;
+        const minute = parts.find(p => p.type === 'minute').value;
         formattedTime = `${year}-${month}-${day}T${hour}:${minute}`;
       }
     }
@@ -372,18 +406,65 @@ function AdminDashboard({ user, onLogout }) {
         },
         config()
       );
-      toast.success("Course updated successfully!", {
-        id: "updateCourseToast",
-      });
+      toast.success("Course updated successfully!", { id: "updateCourseToast" });
       closeEditCourseModal();
       fetchCourses(); // Refresh the courses list
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update course", {
-        id: "updateCourseToast",
-      });
+      toast.error(
+        error.response?.data?.message || "Failed to update course",
+        { id: "updateCourseToast" }
+      );
       console.error("Error updating course:", error.response?.data || error);
     }
   };
+
+  // NEW: Handle checkbox selection for courses
+  const handleCourseCheckboxChange = (courseId) => {
+    setSelectedCourseIds((prevSelected) =>
+      prevSelected.includes(courseId)
+        ? prevSelected.filter((id) => id !== courseId)
+        : [...prevSelected, courseId]
+    );
+  };
+
+  // NEW: Handle "Select All" checkbox for courses in the current active batch
+  const handleSelectAllCourses = (e) => {
+    const isChecked = e.target.checked;
+    if (isChecked) {
+      const allIdsInCurrentBatch = coursesByBatch[activeCourseBatchTab].map(
+        (course) => course._id
+      );
+      setSelectedCourseIds(allIdsInCurrentBatch);
+    } else {
+      setSelectedCourseIds([]);
+    }
+  };
+
+  // NEW: Handle bulk deletion of selected courses
+  const handleDeleteSelectedCourses = async () => {
+    if (selectedCourseIds.length === 0) {
+      toast.error("Please select at least one course to delete.");
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete ${selectedCourseIds.length} selected course(s) and all their associated enrollments?`)) {
+      try {
+        toast.loading("Deleting courses...", { id: "deleteCoursesToast" });
+        // Send selectedCourseIds in the request body for DELETE
+        await axios.delete(`/api/courses/bulk-delete`, {
+          data: { ids: selectedCourseIds }, // DELETE with body requires 'data' key
+          ...config(), // Spread the config after data to ensure headers are applied
+        });
+        toast.success("Selected courses deleted successfully!", { id: "deleteCoursesToast" });
+        setSelectedCourseIds([]); // Clear selection
+        fetchCourses(); // Refresh course list
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to delete selected courses.", { id: "deleteCoursesToast" });
+        console.error("Error deleting courses:", error.response?.data || error);
+      }
+    }
+  };
+
 
   // Group students by batch for the tabs
   const studentsByBatch = allStudents.reduce((acc, student) => {
@@ -393,6 +474,7 @@ function AdminDashboard({ user, onLogout }) {
 
   const sortedBatches = Object.keys(studentsByBatch).sort();
 
+
   // Group courses by batch for the new course tabs
   const coursesByBatch = courses.reduce((acc, course) => {
     (acc[course.batch] = acc[course.batch] || []).push(course);
@@ -400,6 +482,13 @@ function AdminDashboard({ user, onLogout }) {
   }, {});
 
   const sortedCourseBatches = Object.keys(coursesByBatch).sort();
+
+  // Check if all courses in the current active batch are selected
+  const areAllCoursesInCurrentBatchSelected = activeCourseBatchTab &&
+    coursesByBatch[activeCourseBatchTab] &&
+    coursesByBatch[activeCourseBatchTab].length > 0 &&
+    coursesByBatch[activeCourseBatchTab].every(course => selectedCourseIds.includes(course._id));
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -641,7 +730,7 @@ function AdminDashboard({ user, onLogout }) {
         </div>
 
         {/* View All Students Button */}
-        <div className="flex justify-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
           <button
             onClick={openStudentsModal}
             className="flex items-center px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-lg hover:bg-teal-700 transition duration-300 ease-in-out"
@@ -649,6 +738,8 @@ function AdminDashboard({ user, onLogout }) {
             <UserGroupIcon className="w-6 h-6 mr-3" />
             View All Students
           </button>
+          {/* Render the new ClearSessionButton component */}
+          <ClearSessionButton user={user} onSessionCleared={handleSessionCleared} />
         </div>
 
         {/* Courses List (for Admin to see all courses) - Now with Batch Tabs */}
@@ -688,6 +779,15 @@ function AdminDashboard({ user, onLogout }) {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        {/* NEW: Checkbox for bulk delete */}
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            onChange={handleSelectAllCourses}
+                            checked={areAllCoursesInCurrentBatchSelected}
+                          />
+                        </th>
                         <th
                           scope="col"
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -765,6 +865,15 @@ function AdminDashboard({ user, onLogout }) {
 
                         return (
                           <tr key={course._id} className="hover:bg-gray-50">
+                            {/* NEW: Checkbox for individual course */}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                checked={selectedCourseIds.includes(course._id)}
+                                onChange={() => handleCourseCheckboxChange(course._id)}
+                              />
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {course.courseName}
                             </td>
@@ -821,6 +930,18 @@ function AdminDashboard({ user, onLogout }) {
                       })}
                     </tbody>
                   </table>
+                  {/* NEW: Delete Selected Courses Button */}
+                  {selectedCourseIds.length > 0 && (
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={handleDeleteSelectedCourses}
+                        className="flex items-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 ease-in-out"
+                      >
+                        <TrashIcon className="w-5 h-5 mr-2" />
+                        Delete Selected ({selectedCourseIds.length})
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1078,9 +1199,7 @@ function AdminDashboard({ user, onLogout }) {
                   value={editFormData.enrollmentOpenTime}
                   onChange={handleEditFormChange}
                 />
-                <p className="mt-1 text-sm text-gray-500">
-                  Leave blank to clear time.
-                </p>
+                 <p className="mt-1 text-sm text-gray-500">Leave blank to clear time.</p>
               </div>
               <div className="flex items-center gap-3">
                 <input
