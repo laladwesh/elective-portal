@@ -80,7 +80,9 @@ function AdminDashboard({ user, onLogout }) {
       setAllStudents(res.data);
       // Set the first batch as active tab by default if not already set
       if (res.data.length > 0 && !activeStudentBatchTab) {
-        const uniqueBatches = [...new Set(res.data.map(student => student.batch))].sort();
+        const uniqueBatches = [
+          ...new Set(res.data.map((student) => student.batch)),
+        ].sort();
         if (uniqueBatches.length > 0) {
           setActiveStudentBatchTab(uniqueBatches[0]);
         }
@@ -158,10 +160,12 @@ function AdminDashboard({ user, onLogout }) {
     // Append IST offset if not already present
     let timeToSend = enrollmentTime;
     if (timeToSend) {
-      if (!timeToSend.match(/:[0-5]\d([+-]\d{2}:\d{2}|Z)$/)) { // Checks if already has seconds and timezone/Z
+      if (!timeToSend.match(/:[0-5]\d([+-]\d{2}:\d{2}|Z)$/)) {
+        // Checks if already has seconds and timezone/Z
         timeToSend += ":00"; // Add seconds if missing (datetime-local usually doesn't have it)
       }
-      if (!timeToSend.match(/[+-]\d{2}:\d{2}$/)) { // Checks if timezone offset is missing
+      if (!timeToSend.match(/[+-]\d{2}:\d{2}$/)) {
+        // Checks if timezone offset is missing
         timeToSend += "+05:30"; // IST offset
       }
     }
@@ -177,7 +181,9 @@ function AdminDashboard({ user, onLogout }) {
         },
         config()
       );
-      toast.success(`Courses for batch ${batch} created successfully!`, { id: "createCourseToast" });
+      toast.success(`Courses for batch ${batch} created successfully!`, {
+        id: "createCourseToast",
+      });
       setNewBatchCourseData({
         batch: "",
         enrollmentTime: "",
@@ -206,7 +212,9 @@ function AdminDashboard({ user, onLogout }) {
       setNewStudent({ name: "", email: "", batch: "" });
       fetchAllStudents(); // Refresh student list when a new student is added
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add student", { id: "addStudentToast" });
+      toast.error(error.response?.data?.message || "Failed to add student", {
+        id: "addStudentToast",
+      });
     }
   };
 
@@ -261,7 +269,6 @@ function AdminDashboard({ user, onLogout }) {
   }, {});
 
   const sortedBatches = Object.keys(studentsByBatch).sort();
-
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -513,7 +520,6 @@ function AdminDashboard({ user, onLogout }) {
           </button>
         </div>
 
-
         {/* Courses List (for Admin to see all courses) */}
         <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
@@ -575,23 +581,31 @@ function AdminDashboard({ user, onLogout }) {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {courses.map((course) => {
-                    const isFull = course.enrolledStudentsCount >= course.intakeCapacity;
+                    const isFull =
+                      course.enrolledStudentsCount >= course.intakeCapacity;
                     let statusIcon = course.isEnrollmentActive ? (
                       <CheckCircleIcon className="w-5 h-5 text-green-500 inline-block align-middle mr-1" />
                     ) : (
                       <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
                     );
                     let statusText = course.isEnrollmentActive ? "Yes" : "No";
-                    let statusClass = course.isEnrollmentActive ? "text-green-600" : "text-red-600";
+                    let statusClass = course.isEnrollmentActive
+                      ? "text-green-600"
+                      : "text-red-600";
 
                     if (isFull && course.isEnrollmentActive) {
-                        statusIcon = <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />;
-                        statusText = "Full (Inactive)";
-                        statusClass = "text-red-600";
-                    } else if (isFull) { // If it's full but admin manually closed it
-                        statusIcon = <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />;
-                        statusText = "Full";
-                        statusClass = "text-red-600";
+                      statusIcon = (
+                        <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
+                      );
+                      statusText = "Full (Inactive)";
+                      statusClass = "text-red-600";
+                    } else if (isFull) {
+                      // If it's full but admin manually closed it
+                      statusIcon = (
+                        <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
+                      );
+                      statusText = "Full";
+                      statusClass = "text-red-600";
                     }
 
                     return (
@@ -610,10 +624,13 @@ function AdminDashboard({ user, onLogout }) {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {course.enrollmentOpenTime
-                            ? new Date(course.enrollmentOpenTime).toLocaleString(
-                                "en-IN",
-                                { timeZone: "Asia/Kolkata", dateStyle: 'short', timeStyle: 'short' }
-                              )
+                            ? new Date(
+                                course.enrollmentOpenTime
+                              ).toLocaleString("en-IN", {
+                                timeZone: "Asia/Kolkata",
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })
                             : "Not Set"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -649,43 +666,88 @@ function AdminDashboard({ user, onLogout }) {
           title={`Enrollments for ${selectedCourseName}`}
         >
           {isLoadingEnrollments ? (
-            <div className="text-center py-8 text-indigo-600">Loading enrollments...</div>
+            <div className="text-center py-8 text-indigo-600">
+              Loading enrollments...
+            </div>
           ) : courseEnrollments.length === 0 ? (
             <p className="text-gray-600 text-center py-4">
               No students enrolled in this course yet.
             </p>
           ) : (
-            <div className="overflow-x-auto max-h-96"> {/* Added max-h for scroll */}
+            <div className="overflow-x-auto max-h-96">
+              {" "}
+              {/* Added max-h for scroll */}
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Email</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment Date (IST)</th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Student Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Student Email
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Batch
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Enrollment Date (IST)
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {courseEnrollments.map((enrollment) => (
                     <tr key={enrollment._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
-                        <IdentificationIcon className="w-4 h-4 mr-2 text-gray-500" />
-                        {enrollment.student.name}
+                      {/* Student Name */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <div className="flex items-center">
+                          <IdentificationIcon className="w-4 h-4 mr-2 text-gray-500" />
+                          <span>{enrollment.student.name}</span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center">
-                        <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-500" />
-                        {enrollment.student.email}
-                      </td>
+
+                      {/* Student Email */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <TagIcon className="w-4 h-4 mr-1 text-gray-400" />
-                        {enrollment.student.batch}
+                        <div className="flex items-center">
+                          <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-500" />
+                          <span>{enrollment.student.email}</span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center">
-                        <CalendarIcon className="w-4 h-4 mr-2 text-gray-500" />
-                        {new Date(enrollment.enrollmentDate).toLocaleString(
-                          "en-IN",
-                          { timeZone: "Asia/Kolkata", dateStyle: 'short', timeStyle: 'short' }
-                        )}
+
+                      {/* Batch */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <TagIcon className="w-4 h-4 mr-1 text-gray-400" />
+                          <span>{enrollment.student.batch}</span>
+                        </div>
+                      </td>
+
+                      {/* Enrollment Date (IST) */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <CalendarIcon className="w-4 h-4 mr-2 text-gray-500" />
+                          <span>
+                            {new Date(enrollment.enrollmentDate).toLocaleString(
+                              "en-IN",
+                              {
+                                timeZone: "Asia/Kolkata",
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              }
+                            )}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -702,7 +764,9 @@ function AdminDashboard({ user, onLogout }) {
           title="All Students by Batch"
         >
           {isLoadingStudents ? (
-            <div className="text-center py-8 text-teal-600">Loading students...</div>
+            <div className="text-center py-8 text-teal-600">
+              Loading students...
+            </div>
           ) : sortedBatches.length === 0 ? (
             <p className="text-gray-600 text-center py-4">No students found.</p>
           ) : (
@@ -727,25 +791,39 @@ function AdminDashboard({ user, onLogout }) {
               </div>
 
               {/* Student List for Active Tab */}
-              <div className="mt-6 overflow-x-auto max-h-96"> {/* Added max-h for scroll */}
+              <div className="mt-6 overflow-x-auto max-h-96">
+                {" "}
+                {/* Added max-h for scroll */}
                 {activeStudentBatchTab && (
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
                       </tr>
                     </thead>
+
                     <tbody className="bg-white divide-y divide-gray-200">
                       {studentsByBatch[activeStudentBatchTab].map((student) => (
                         <tr key={student._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
-                            <IdentificationIcon className="w-4 h-4 mr-2 text-gray-500" />
-                            {student.name}
+                          {/* Name cell stays a table-cell */}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <div className="flex items-center">
+                              <IdentificationIcon className="w-4 h-4 mr-2 text-gray-500" />
+                              <span>{student.name}</span>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center">
-                            <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-500" />
-                            {student.email}
+
+                          {/* Email cell stays a table-cell */}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-500" />
+                              <span>{student.email}</span>
+                            </div>
                           </td>
                         </tr>
                       ))}
