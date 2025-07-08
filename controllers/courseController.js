@@ -57,7 +57,7 @@ const createBatchCourses = asyncHandler(async (req, res) => {
     const existingCourse = await Course.findOne({ courseName: courseData.courseName, batch: batch });
     if (existingCourse) {
         res.status(400);
-        throw new Error(`Course "${courseData.courseName}" already exists for batch "${batch}".`);
+        throw new new Error(`Course "${courseData.courseName}" already exists for batch "${batch}".`);
     }
   }
 
@@ -134,6 +134,7 @@ const updateCourse = asyncHandler(async (req, res) => {
 // @desc    Delete a course
 // @route   DELETE /api/courses/:id
 // @access  Private/Admin
+// NOTE: This route is now superseded by bulkDeleteCourses for UI, but kept for direct API calls if needed.
 const deleteCourse = asyncHandler(async (req, res) => {
   const course = await Course.findById(req.params.id);
 
@@ -148,6 +149,32 @@ const deleteCourse = asyncHandler(async (req, res) => {
   await course.deleteOne();
   res.status(200).json({ message: 'Course removed successfully, and associated enrollments cleared.' });
 });
+
+// @desc    Bulk delete courses
+// @route   DELETE /api/courses/bulk-delete
+// @access  Private/Admin
+const bulkDeleteCourses = asyncHandler(async (req, res) => {
+  const { ids } = req.body; // Expect an array of course IDs
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    res.status(400);
+    throw new Error('Please provide an array of course IDs to delete.');
+  }
+
+  // Delete all enrollments associated with these courses
+  await Enrollment.deleteMany({ course: { $in: ids } });
+
+  // Delete the courses themselves
+  const deleteResult = await Course.deleteMany({ _id: { $in: ids } });
+
+  if (deleteResult.deletedCount === 0) {
+    res.status(404);
+    throw new Error('No courses found with the provided IDs to delete.');
+  }
+
+  res.status(200).json({ message: `${deleteResult.deletedCount} courses and their associated enrollments removed successfully.` });
+});
+
 
 // @desc    Set/Update enrollment opening time and activate/deactivate enrollment
 // @route   PUT /api/courses/:id/set-enrollment-time
@@ -292,16 +319,28 @@ const getMyEnrollments = asyncHandler(async (req, res) => {
 
   res.status(200).json(enrollments);
 });
+const clearAllCourses = asyncHandler(async (req, res) => {
+  // Delete all enrollments first
+  await Enrollment.deleteMany({});
+  // Then delete all courses
+  const deleteResult = await Course.deleteMany({});
+
+  res.status(200).json({
+    message: `Successfully cleared all ${deleteResult.deletedCount} courses and all associated enrollments.`,
+  });
+});
 
 
 module.exports = {
   addCourse,
   getCourses,
   updateCourse,
-  deleteCourse,
+  deleteCourse, // Keep this if you want single delete endpoint
+  bulkDeleteCourses, // NEW EXPORT
+    clearAllCourses,
   setEnrollmentTime,
   enrollInCourse,
   getCourseEnrollments,
   getMyEnrollments,
-  createBatchCourses // <--- NEW EXPORT
+  createBatchCourses
 };
