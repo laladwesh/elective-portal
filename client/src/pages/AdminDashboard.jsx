@@ -22,8 +22,7 @@ import {
   BuildingOffice2Icon,
   ClipboardDocumentListIcon, // For viewing enrollments/students
   UserGroupIcon, // For group of students
-  TagIcon, // For batch tag
-  TicketIcon, // For individual course in modal
+  TagIcon,
   PencilSquareIcon, // For edit functionality
   TrashIcon, // For delete functionality
 } from "@heroicons/react/24/solid";
@@ -45,6 +44,7 @@ function AdminDashboard({ user, onLogout }) {
   // State for Course Enrollments Modal
   const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState("");
+  console.info("Selected Course ID:", selectedCourseId);
   const [selectedCourseName, setSelectedCourseName] = useState("");
   const [courseEnrollments, setCourseEnrollments] = useState([]);
   const [isLoadingEnrollments, setIsLoadingEnrollments] = useState(false);
@@ -92,33 +92,33 @@ function AdminDashboard({ user, onLogout }) {
 
   // Helper function to format UTC Date objects to datetime-local string (IST)
   // This is crucial for displaying the correct time in the edit modal input field.
-  const formatUTCToISTDatetimeLocal = (utcDateString) => {
-    if (!utcDateString) return "";
+  // const formatUTCToISTDatetimeLocal = (utcDateString) => {
+  //   if (!utcDateString) return "";
 
-    const date = new Date(utcDateString);
+  //   const date = new Date(utcDateString);
 
-    // Use Intl.DateTimeFormat to get components in 'Asia/Kolkata' timezone
-    const options = {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hourCycle: "h23", // Ensure 24-hour format for input type="datetime-local"
-      timeZone: "Asia/Kolkata",
-    };
+  //   // Use Intl.DateTimeFormat to get components in 'Asia/Kolkata' timezone
+  //   const options = {
+  //     year: "numeric",
+  //     month: "2-digit",
+  //     day: "2-digit",
+  //     hour: "2-digit",
+  //     minute: "2-digit",
+  //     hourCycle: "h23", // Ensure 24-hour format for input type="datetime-local"
+  //     timeZone: "Asia/Kolkata",
+  //   };
 
-    const formatter = new Intl.DateTimeFormat("en-CA", options); // 'en-CA' is good for YYYY-MM-DD
-    const parts = formatter.formatToParts(date);
+  //   const formatter = new Intl.DateTimeFormat("en-CA", options); // 'en-CA' is good for YYYY-MM-DD
+  //   const parts = formatter.formatToParts(date);
 
-    const year = parts.find((p) => p.type === "year").value;
-    const month = parts.find((p) => p.type === "month").value;
-    const day = parts.find((p) => p.type === "day").value;
-    const hour = parts.find((p) => p.type === "hour").value;
-    const minute = parts.find((p) => p.type === "minute").value;
+  //   const year = parts.find((p) => p.type === "year").value;
+  //   const month = parts.find((p) => p.type === "month").value;
+  //   const day = parts.find((p) => p.type === "day").value;
+  //   const hour = parts.find((p) => p.type === "hour").value;
+  //   const minute = parts.find((p) => p.type === "minute").value;
 
-    return `${year}-${month}-${day}T${hour}:${minute}`;
-  };
+  //   return `${year}-${month}-${day}T${hour}:${minute}`;
+  // };
 
   // Fetch all courses (for admin's table)
   const fetchCourses = useCallback(async () => {
