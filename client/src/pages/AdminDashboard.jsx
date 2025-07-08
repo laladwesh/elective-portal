@@ -22,7 +22,8 @@ import {
   ClipboardDocumentListIcon, // For viewing enrollments/students
   UserGroupIcon, // For group of students
   TagIcon, // For batch tag
-  TicketIcon, // For individual course in modal
+  // TicketIcon, // For individual course in modal
+  PencilSquareIcon, // For edit functionality
 } from "@heroicons/react/24/solid";
 
 function AdminDashboard({ user, onLogout }) {
@@ -51,6 +52,18 @@ function AdminDashboard({ user, onLogout }) {
   const [allStudents, setAllStudents] = useState([]);
   const [activeStudentBatchTab, setActiveStudentBatchTab] = useState(""); // Holds the active batch e.g., "2020"
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+
+  // NEW: State for Edit Course Modal
+  const [isEditCourseModalOpen, setIsEditCourseModalOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null); // Stores the course object being edited
+  const [editFormData, setEditFormData] = useState({
+    // Stores form data for the edit modal
+    courseName: "",
+    batch: "",
+    intakeCapacity: "",
+    enrollmentOpenTime: "",
+    isEnrollmentActive: false,
+  });
 
   // Memoize config for API calls
   const config = useCallback(
@@ -260,6 +273,83 @@ function AdminDashboard({ user, onLogout }) {
     setIsStudentsModalOpen(false);
     setAllStudents([]); // Clear student data on close
     setActiveStudentBatchTab("");
+  };
+
+  // NEW: Functions for Edit Course Modal
+  const openEditCourseModal = (course) => {
+    setEditingCourse(course);
+    // Format enrollmentOpenTime for datetime-local input
+    const formattedTime = course.enrollmentOpenTime
+      ? new Date(course.enrollmentOpenTime).toISOString().slice(0, 16) // "YYYY-MM-DDTHH:MM"
+      : "";
+
+    setEditFormData({
+      courseName: course.courseName,
+      batch: course.batch,
+      intakeCapacity: course.intakeCapacity,
+      enrollmentOpenTime: formattedTime,
+      isEnrollmentActive: course.isEnrollmentActive,
+    });
+    setIsEditCourseModalOpen(true);
+  };
+
+  const closeEditCourseModal = () => {
+    setIsEditCourseModalOpen(false);
+    setEditingCourse(null);
+    setEditFormData({
+      courseName: "",
+      batch: "",
+      intakeCapacity: "",
+      enrollmentOpenTime: "",
+      isEnrollmentActive: false,
+    });
+  };
+
+  const handleEditFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleUpdateCourse = async (e) => {
+    e.preventDefault();
+    if (!editingCourse) return;
+
+    let timeToSend = editFormData.enrollmentOpenTime;
+    if (timeToSend) {
+      if (!timeToSend.match(/:[0-5]\d([+-]\d{2}:\d{2}|Z)$/)) {
+        timeToSend += ":00";
+      }
+      if (!timeToSend.match(/[+-]\d{2}:\d{2}$/)) {
+        timeToSend += "+05:30"; // IST offset
+      }
+    } else {
+      timeToSend = null; // Send null if time is cleared
+    }
+
+    try {
+      toast.loading("Updating course...", { id: "updateCourseToast" });
+      await axios.put(
+        `/api/courses/${editingCourse._id}`,
+        {
+          ...editFormData,
+          enrollmentOpenTime: timeToSend,
+        },
+        config()
+      );
+      toast.success("Course updated successfully!", {
+        id: "updateCourseToast",
+      });
+      closeEditCourseModal();
+      fetchCourses(); // Refresh the courses list
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update course", {
+        id: "updateCourseToast",
+      });
+      console.error("Error updating course:", error.response?.data || error);
+    }
   };
 
   // Group students by batch for the tabs
@@ -639,7 +729,7 @@ function AdminDashboard({ user, onLogout }) {
                             {statusText}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex space-x-2">
                           <button
                             onClick={() =>
                               openEnrollmentModal(course._id, course.courseName)
@@ -648,6 +738,14 @@ function AdminDashboard({ user, onLogout }) {
                           >
                             <EyeIcon className="w-4 h-4 mr-1" />
                             View Enrolled
+                          </button>
+                          {/* NEW: Edit Course Button */}
+                          <button
+                            onClick={() => openEditCourseModal(course)}
+                            className="flex items-center justify-center px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium text-xs transition duration-150 shadow-sm"
+                          >
+                            <PencilSquareIcon className="w-4 h-4 mr-1" />
+                            Edit
                           </button>
                         </td>
                       </tr>
@@ -659,7 +757,7 @@ function AdminDashboard({ user, onLogout }) {
           )}
         </div>
 
-        {/* Course Enrollments Modal */}
+        {/* Course Enrollments Modal (Existing) */}
         <Modal
           isOpen={isEnrollmentModalOpen}
           onClose={closeEnrollmentModal}
@@ -757,7 +855,7 @@ function AdminDashboard({ user, onLogout }) {
           )}
         </Modal>
 
-        {/* All Students Modal */}
+        {/* All Students Modal (Existing) */}
         <Modal
           isOpen={isStudentsModalOpen}
           onClose={closeStudentsModal}
@@ -832,6 +930,114 @@ function AdminDashboard({ user, onLogout }) {
                 )}
               </div>
             </div>
+          )}
+        </Modal>
+
+        {/* NEW: Edit Course Modal */}
+        <Modal
+          isOpen={isEditCourseModalOpen}
+          onClose={closeEditCourseModal}
+          title={`Edit Course: ${editingCourse?.courseName}`}
+        >
+          {editingCourse && (
+            <form onSubmit={handleUpdateCourse} className="space-y-4 p-4">
+              <div>
+                <label
+                  htmlFor="editCourseName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Course Name
+                </label>
+                <input
+                  type="text"
+                  name="courseName"
+                  id="editCourseName"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                  value={editFormData.courseName}
+                  onChange={handleEditFormChange}
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="editBatch"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Batch
+                </label>
+                <input
+                  type="text"
+                  name="batch"
+                  id="editBatch"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                  value={editFormData.batch}
+                  onChange={handleEditFormChange}
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="editIntakeCapacity"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Intake Capacity
+                </label>
+                <input
+                  type="number"
+                  name="intakeCapacity"
+                  id="editIntakeCapacity"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                  value={editFormData.intakeCapacity}
+                  onChange={handleEditFormChange}
+                  min="1"
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="editEnrollmentOpenTime"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Enrollment Open Time (IST)
+                </label>
+                <input
+                  type="datetime-local"
+                  name="enrollmentOpenTime"
+                  id="editEnrollmentOpenTime"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                  value={editFormData.enrollmentOpenTime}
+                  onChange={handleEditFormChange}
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Leave blank to clear time. Ensure +05:30 offset is handled or
+                  remove this note if your backend handles it automatically from
+                  local time.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="editIsEnrollmentActive"
+                  name="isEnrollmentActive"
+                  checked={editFormData.isEnrollmentActive}
+                  onChange={handleEditFormChange}
+                  className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label
+                  htmlFor="editIsEnrollmentActive"
+                  className="text-gray-700 text-base font-medium"
+                >
+                  Enrollment Active
+                </label>
+              </div>
+              <button
+                type="submit"
+                className="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out mt-6"
+              >
+                <PencilSquareIcon className="w-5 h-5 mr-2" />
+                Save Changes
+              </button>
+            </form>
           )}
         </Modal>
       </div>
