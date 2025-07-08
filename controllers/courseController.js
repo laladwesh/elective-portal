@@ -330,6 +330,13 @@ const clearAllCourses = asyncHandler(async (req, res) => {
   });
 });
 
+const getAllEnrollmentsWithDetails = asyncHandler(async (req, res) => {
+  const enrollments = await Enrollment.find({})
+    .populate('student', 'name email batch') // Populate student details
+    .populate('course', 'courseName batch intakeCapacity'); // Populate course details
+
+  res.status(200).json(enrollments);
+});
 
 module.exports = {
   addCourse,
@@ -341,6 +348,7 @@ module.exports = {
   setEnrollmentTime,
   enrollInCourse,
   getCourseEnrollments,
+  getAllEnrollmentsWithDetails,
   getMyEnrollments,
   createBatchCourses
 };
