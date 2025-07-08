@@ -22,7 +22,7 @@ import {
   ClipboardDocumentListIcon, // For viewing enrollments/students
   UserGroupIcon, // For group of students
   TagIcon, // For batch tag
-  TicketIcon, // For individual course in modal
+  // TicketIcon, // For individual course in modal
   PencilSquareIcon, // For edit functionality
 } from "@heroicons/react/24/solid";
 
@@ -65,6 +65,9 @@ function AdminDashboard({ user, onLogout }) {
     isEnrollmentActive: false,
   });
 
+  // NEW: State for Course Batch Tabs
+  const [activeCourseBatchTab, setActiveCourseBatchTab] = useState("");
+
   // Memoize config for API calls
   const config = useCallback(
     () => ({
@@ -80,10 +83,19 @@ function AdminDashboard({ user, onLogout }) {
     try {
       const res = await axios.get(`/api/courses`, config());
       setCourses(res.data);
+      // Set the first batch as active tab for courses if not already set
+      if (res.data.length > 0 && !activeCourseBatchTab) {
+        const uniqueCourseBatches = [
+          ...new Set(res.data.map((course) => course.batch)),
+        ].sort();
+        if (uniqueCourseBatches.length > 0) {
+          setActiveCourseBatchTab(uniqueCourseBatches[0]);
+        }
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to fetch courses");
     }
-  }, [config]);
+  }, [config, activeCourseBatchTab]); // Added activeCourseBatchTab as dependency
 
   // Fetch all students (for student list modal)
   const fetchAllStudents = useCallback(async () => {
@@ -138,7 +150,7 @@ function AdminDashboard({ user, onLogout }) {
     if (newBatchCourseData.courses.length > 1) {
       setNewBatchCourseData((prev) => ({
         ...prev,
-        courses: prev.courses.filter((_, i) => i !== index),
+        courses: newBatchCourseData.courses.filter((_, i) => i !== index),
       }));
     }
   };
@@ -380,6 +392,14 @@ function AdminDashboard({ user, onLogout }) {
   }, {});
 
   const sortedBatches = Object.keys(studentsByBatch).sort();
+
+  // Group courses by batch for the new course tabs
+  const coursesByBatch = courses.reduce((acc, course) => {
+    (acc[course.batch] = acc[course.batch] || []).push(course);
+    return acc;
+  }, {});
+
+  const sortedCourseBatches = Object.keys(coursesByBatch).sort();
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -631,149 +651,178 @@ function AdminDashboard({ user, onLogout }) {
           </button>
         </div>
 
-        {/* Courses List (for Admin to see all courses) */}
+        {/* Courses List (for Admin to see all courses) - Now with Batch Tabs */}
         <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
             <ClipboardDocumentListIcon className="w-6 h-6 mr-3 text-emerald-600" />
-            Available Courses (All Batches)
+            Available Courses
           </h2>
           {courses.length === 0 ? (
             <p className="text-gray-600 text-center py-4">
               No courses available. Start by creating courses for a batch!
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            <div>
+              {/* Batch Tabs for Courses */}
+              <div className="border-b border-gray-200 mb-6">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                  {sortedCourseBatches.map((batch) => (
+                    <button
+                      key={batch}
+                      onClick={() => setActiveCourseBatchTab(batch)}
+                      className={`${
+                        activeCourseBatchTab === batch
+                          ? "border-indigo-500 text-indigo-600"
+                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150`}
                     >
-                      Course Name
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Batch
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Intake
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Enrolled
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Open Time (IST)
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Active
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {courses.map((course) => {
-                    const isFull =
-                      course.enrolledStudentsCount >= course.intakeCapacity;
-                    let statusIcon = course.isEnrollmentActive ? (
-                      <CheckCircleIcon className="w-5 h-5 text-green-500 inline-block align-middle mr-1" />
-                    ) : (
-                      <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
-                    );
-                    let statusText = course.isEnrollmentActive ? "Yes" : "No";
-                    let statusClass = course.isEnrollmentActive
-                      ? "text-green-600"
-                      : "text-red-600";
+                      Batch {batch} ({coursesByBatch[batch].length})
+                    </button>
+                  ))}
+                </nav>
+              </div>
 
-                    if (isFull && course.isEnrollmentActive) {
-                      statusIcon = (
-                        <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
-                      );
-                      statusText = "Full (Inactive)";
-                      statusClass = "text-red-600";
-                    } else if (isFull) {
-                      // If it's full but admin manually closed it
-                      statusIcon = (
-                        <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
-                      );
-                      statusText = "Full";
-                      statusClass = "text-red-600";
-                    }
-
-                    return (
-                      <tr key={course._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {course.courseName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {course.batch}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {course.intakeCapacity}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {course.enrolledStudentsCount}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {course.enrollmentOpenTime
-                            ? new Date(
-                                course.enrollmentOpenTime
-                              ).toLocaleString("en-IN", {
-                                timeZone: "Asia/Kolkata",
-                                dateStyle: "short",
-                                timeStyle: "short",
-                              })
-                            : "Not Set"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {statusIcon}
-                          <span className={`${statusClass} font-semibold`}>
-                            {statusText}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex space-x-2">
-                          <button
-                            onClick={() =>
-                              openEnrollmentModal(course._id, course.courseName)
-                            }
-                            className="flex items-center justify-center px-3 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 font-medium text-xs transition duration-150 shadow-sm"
-                          >
-                            <EyeIcon className="w-4 h-4 mr-1" />
-                            View Enrolled
-                          </button>
-                          {/* NEW: Edit Course Button */}
-                          <button
-                            onClick={() => openEditCourseModal(course)}
-                            className="flex items-center justify-center px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium text-xs transition duration-150 shadow-sm"
-                          >
-                            <PencilSquareIcon className="w-4 h-4 mr-1" />
-                            Edit
-                          </button>
-                        </td>
+              {/* Course List for Active Batch */}
+              {activeCourseBatchTab && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Course Name
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Batch
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Intake
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Enrolled
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Open Time (IST)
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Active
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Actions
+                        </th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {coursesByBatch[activeCourseBatchTab].map((course) => {
+                        const isFull =
+                          course.enrolledStudentsCount >= course.intakeCapacity;
+                        let statusIcon = course.isEnrollmentActive ? (
+                          <CheckCircleIcon className="w-5 h-5 text-green-500 inline-block align-middle mr-1" />
+                        ) : (
+                          <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
+                        );
+                        let statusText = course.isEnrollmentActive
+                          ? "Yes"
+                          : "No";
+                        let statusClass = course.isEnrollmentActive
+                          ? "text-green-600"
+                          : "text-red-600";
+
+                        if (isFull && course.isEnrollmentActive) {
+                          statusIcon = (
+                            <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
+                          );
+                          statusText = "Full (Inactive)";
+                          statusClass = "text-red-600";
+                        } else if (isFull) {
+                          // If it's full but admin manually closed it
+                          statusIcon = (
+                            <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
+                          );
+                          statusText = "Full";
+                          statusClass = "text-red-600";
+                        }
+
+                        return (
+                          <tr key={course._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {course.courseName}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {course.batch}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {course.intakeCapacity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {course.enrolledStudentsCount}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {course.enrollmentOpenTime
+                                ? new Date(
+                                    course.enrollmentOpenTime
+                                  ).toLocaleString("en-IN", {
+                                    timeZone: "Asia/Kolkata",
+                                    dateStyle: "short",
+                                    timeStyle: "short",
+                                  })
+                                : "Not Set"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {statusIcon}
+                              <span className={`${statusClass} font-semibold`}>
+                                {statusText}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex space-x-2">
+                              <button
+                                onClick={() =>
+                                  openEnrollmentModal(
+                                    course._id,
+                                    course.courseName
+                                  )
+                                }
+                                className="flex items-center justify-center px-3 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 font-medium text-xs transition duration-150 shadow-sm"
+                              >
+                                <EyeIcon className="w-4 h-4 mr-1" />
+                                View Enrolled
+                              </button>
+                              {/* NEW: Edit Course Button */}
+                              <button
+                                onClick={() => openEditCourseModal(course)}
+                                className="flex items-center justify-center px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium text-xs transition duration-150 shadow-sm"
+                              >
+                                <PencilSquareIcon className="w-4 h-4 mr-1" />
+                                Edit
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
