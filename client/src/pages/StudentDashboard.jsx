@@ -7,7 +7,7 @@ import {
     UserCircleIcon,
     AcademicCapIcon,
     ArrowRightOnRectangleIcon,
-    CheckCircleIcon,
+    // CheckCircleIcon,
     XCircleIcon,
     CalendarDaysIcon,
     ClipboardDocumentCheckIcon,
