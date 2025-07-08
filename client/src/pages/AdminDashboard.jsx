@@ -22,7 +22,7 @@ import {
   ClipboardDocumentListIcon, // For viewing enrollments/students
   UserGroupIcon, // For group of students
   TagIcon, // For batch tag
-  // TicketIcon, // For individual course in modal
+  TicketIcon, // For individual course in modal
   PencilSquareIcon, // For edit functionality
 } from "@heroicons/react/24/solid";
 
@@ -278,10 +278,31 @@ function AdminDashboard({ user, onLogout }) {
   // NEW: Functions for Edit Course Modal
   const openEditCourseModal = (course) => {
     setEditingCourse(course);
-    // Format enrollmentOpenTime for datetime-local input
-    const formattedTime = course.enrollmentOpenTime
-      ? new Date(course.enrollmentOpenTime).toISOString().slice(0, 16) // "YYYY-MM-DDTHH:MM"
-      : "";
+    let formattedTime = "";
+    if (course.enrollmentOpenTime) {
+      const dateObj = new Date(course.enrollmentOpenTime); // This is a UTC Date object
+      if (dateObj.toString() !== "Invalid Date") {
+        // Use Intl.DateTimeFormat to get parts in IST, then construct YYYY-MM-DDTHH:MM
+        const options = {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23", // Use 24-hour format
+          timeZone: "Asia/Kolkata",
+        };
+        const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(
+          dateObj
+        ); // en-CA gives YYYY-MM-DD order
+        const year = parts.find((p) => p.type === "year").value;
+        const month = parts.find((p) => p.type === "month").value;
+        const day = parts.find((p) => p.type === "day").value;
+        const hour = parts.find((p) => p.type === "hour").value;
+        const minute = parts.find((p) => p.type === "minute").value;
+        formattedTime = `${year}-${month}-${day}T${hour}:${minute}`;
+      }
+    }
 
     setEditFormData({
       courseName: course.courseName,
@@ -1009,9 +1030,7 @@ function AdminDashboard({ user, onLogout }) {
                   onChange={handleEditFormChange}
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  Leave blank to clear time. Ensure +05:30 offset is handled or
-                  remove this note if your backend handles it automatically from
-                  local time.
+                  Leave blank to clear time.
                 </p>
               </div>
               <div className="flex items-center gap-3">
