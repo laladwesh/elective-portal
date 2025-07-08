@@ -184,45 +184,78 @@ const enrollInCourse = asyncHandler(async (req, res) => {
   const courseId = req.params.id;
   const studentId = req.user._id;
 
-  // 1. Check if the student is ALREADY ENROLLED IN ANY COURSE
-  const existingEnrollmentForStudent = await Enrollment.findOne({ student: studentId });
-  if (existingEnrollmentForStudent) {
-    const enrolledCourse = await Course.findById(existingEnrollmentForStudent.course);
-    const courseName = enrolledCourse ? enrolledCourse.courseName : 'an unknown course';
+  // 1. Check if student is already enrolled in this course
+  const existingEnrollment = await Enrollment.findOne({ student: studentId, course: courseId });
+  if (existingEnrollment) {
     res.status(400);
-    throw new Error(`You are already enrolled in a course: "${courseName}". You can only enroll in one elective course.`);
+    throw new Error('You are already enrolled in this course.');
   }
 
-  // 2. Find the course
+  // 2. Find the course and check availability
   const course = await Course.findById(courseId);
   if (!course) {
     res.status(404);
     throw new Error('Course not found.');
   }
 
-  // 3. Check if enrollment is active and time has passed
-  const now = new Date();
-  if (!course.isEnrollmentActive || (course.enrollmentOpenTime && now < course.enrollmentOpenTime)) {
-    res.status(400);
-    throw new Error('Enrollment for this course is not yet open or has been closed.');
+  // **START OF NEW ENROLLMENT CONTROL CHECKS**
+
+  // Check 1: Is enrollment active for this course?
+  if (!course.isEnrollmentActive) {
+    res.status(403); // Forbidden
+    throw new Error('Enrollment is currently not active for this course. Please contact administration for more details.');
   }
 
-  // 4. Check if student's batch matches course batch or if course is for 'All' batches
-  if (course.batch !== 'All' && course.batch !== req.user.batch) {
-    res.status(403);
-    throw new Error(`This course is not available for your batch (${req.user.batch}).`);
+  // Check 2: Has the enrollment open time passed?
+  if (course.enrollmentOpenTime) { // Proceed only if enrollmentOpenTime is set
+    const currentTime = new Date(); // Current time (UTC) on the server
+    const enrollmentOpenTime = new Date(course.enrollmentOpenTime); // The stored IST moment (as UTC Date object)
+
+    if (currentTime < enrollmentOpenTime) {
+      res.status(403); // Forbidden
+      // Provide a user-friendly message with the exact opening time in IST
+      const formatter = new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true, // Use 12-hour format with AM/PM
+        // weekday: 'short', // Optional: add weekday
+      });
+      const formattedOpenTime = formatter.format(enrollmentOpenTime);
+      throw new Error(`Enrollment for this course will open on ${formattedOpenTime} IST.`);
+    }
+  }
+  // **END OF NEW ENROLLMENT CONTROL CHECKS**
+
+  if (course.enrolledStudentsCount >= course.intakeCapacity) {
+    res.status(409); // Conflict
+    // To prevent a race condition, also mark enrollment as inactive if it just became full
+    // This is a pragmatic approach; for strictness, separate admin action might be preferred.
+    // For now, let's just throw the error.
+    throw new Error('Course is full. No seats available.');
   }
 
-  // 5. Check for available seats and handle first-come, first-served atomically
-  // Use findOneAndUpdate with $inc and a condition to ensure atomicity
-  const updatedCourse = await Course.findOneAndUpdate(
-    { _id: courseId, enrolledStudentsCount: { $lt: course.intakeCapacity } }, // Condition: only update if not full
-    { $inc: { enrolledStudentsCount: 1 } }, // Action: increment count
+  // Atomically increment enrolledStudentsCount
+  const updatedCourse = await Course.findByIdAndUpdate(
+    courseId,
+    { $inc: { enrolledStudentsCount: 1 } },
     { new: true } // Return the updated document
   );
 
   if (!updatedCourse) {
-    // If updatedCourse is null, it means the course was already full when we tried to update
+    // This case ideally shouldn't happen if findById found it, but for safety
+    res.status(500);
+    throw new Error('Failed to update course enrollment count.');
+  }
+
+  // Defensive check in case another request filled it right after our check
+  // This check is less critical with $inc but good for robustness
+  if (updatedCourse.enrolledStudentsCount > updatedCourse.intakeCapacity) {
+    // Revert the count if it went over
+    await Course.findByIdAndUpdate(courseId, { $inc: { enrolledStudentsCount: -1 } });
     res.status(409); // Conflict
     throw new Error('No seats available for this course, or another student just took the last seat.');
   }
