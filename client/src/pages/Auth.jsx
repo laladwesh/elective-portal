@@ -45,7 +45,7 @@ function Auth({ setUser }) {
           <svg className="mx-auto h-16 w-16 text-indigo-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13.5m0-13.5c-4.148 0-7.5 3.352-7.5 7.5s3.352 7.5 7.5 7.5 7.5-3.352 7.5-7.5-3.352-7.5-7.5-7.5zM12 6.253c-1.895 0-3.69 0.738-5.05 2.098S4.952 12.005 4.952 13.899c0 1.895 0.738 3.69 2.098 5.05S10.101 21.005 12 21.005c1.895 0 3.69-0.738 5.05-2.098S19.048 15.794 19.048 13.899c0-1.895-0.738-3.69-2.098-5.05S13.899 6.253 12 6.253z" />
           </svg>
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Welcome to Elective Portal</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Welcome to PIMS Elective Portal</h1>
           <p className="text-gray-600">Sign in to manage or choose your courses.</p>
         </div>
         <button
