@@ -1,6 +1,7 @@
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const asyncHandler = require('express-async-handler');
+const User = require('../models/User');
 
 // @desc    Admin adds a new single course
 // @route   POST /api/courses
@@ -338,6 +339,115 @@ const getAllEnrollmentsWithDetails = asyncHandler(async (req, res) => {
   res.status(200).json(enrollments);
 });
 
+const getBatches = asyncHandler(async (req, res) => {
+  // Fetch distinct batches from the User model where role is 'student'
+  const batches = await User.distinct('batch', { role: 'student' });
+  // Sort the batches for a cleaner display in the dropdown
+  batches.sort();
+  res.status(200).json(batches);
+});
+
+
+const getEnrollmentStats = asyncHandler(async (req, res) => {
+  const stats = [];
+  const batches = await User.distinct('batch', { role: 'student' }); // Get all unique batches from students
+
+  for (const batch of batches) {
+    const totalStudents = await User.countDocuments({ batch, role: 'student' }); //
+    const enrolledStudentsInBatch = await Enrollment.aggregate([
+      {
+        $lookup: {
+          from: 'users', // Collection name for User model is typically 'users'
+          localField: 'student',
+          foreignField: '_id',
+          as: 'studentDetails',
+        },
+      },
+      {
+        $unwind: '$studentDetails',
+      },
+      {
+        $match: {
+          'studentDetails.batch': batch,
+          'studentDetails.role': 'student', // Ensure we only count students
+        },
+      },
+      {
+        $group: {
+          _id: '$student', // Group by student to count unique enrolled students
+        },
+      },
+      {
+        $count: 'enrolledCount',
+      },
+    ]);
+
+    const enrolledCount = enrolledStudentsInBatch.length > 0 ? enrolledStudentsInBatch[0].enrolledCount : 0;
+    const notEnrolledStudents = totalStudents - enrolledCount;
+
+    stats.push({
+      batch,
+      totalStudents,
+      enrolledStudents: enrolledCount,
+      notEnrolledStudents,
+    });
+  }
+
+  res.status(200).json(stats);
+});
+
+// @desc    Get unenrolled students for a specific batch
+// @route   GET /api/admin/unenrolled-students/:batch
+// @access  Private/Admin
+const getUnenrolledStudents = asyncHandler(async (req, res) => {
+  const { batch } = req.params;
+
+  // 1. Get all student IDs for the given batch
+  const allStudentsInBatch = await User.find({ batch, role: 'student' }).select('_id'); //
+  const allStudentIdsInBatch = allStudentsInBatch.map(student => student._id);
+
+  // 2. Get all student IDs who are enrolled in any course for the given batch
+  const enrolledStudentIds = await Enrollment.aggregate([
+    {
+      $lookup: {
+        from: 'users', // Collection name for User model is typically 'users'
+        localField: 'student',
+        foreignField: '_id',
+        as: 'studentDetails',
+      },
+    },
+    {
+      $unwind: '$studentDetails',
+    },
+    {
+      $match: {
+        'studentDetails.batch': batch,
+        'studentDetails.role': 'student', // Ensure we only match students
+      },
+    },
+    {
+      $group: {
+        _id: '$student',
+      },
+    },
+  ]);
+
+  const enrolledIds = enrolledStudentIds.map(enrollment => enrollment._id);
+
+  // 3. Find students who are in allStudentIdsInBatch but not in enrolledIds
+  const unenrolledStudents = await User.find({ //
+    _id: { $in: allStudentIdsInBatch, $nin: enrolledIds },
+    batch: batch,
+    role: 'student', // Ensure we only query for students
+  }).select('name email batch'); // Select only necessary fields
+
+  if (!unenrolledStudents || unenrolledStudents.length === 0) {
+    return res.status(404).json({ message: `No unenrolled students found for batch ${batch}.` });
+  }
+
+  res.status(200).json(unenrolledStudents);
+});
+
 module.exports = {
   addCourse,
   getCourses,
@@ -350,5 +460,8 @@ module.exports = {
   getCourseEnrollments,
   getAllEnrollmentsWithDetails,
   getMyEnrollments,
-  createBatchCourses
+  createBatchCourses,
+  getBatches, // NEW EXPORT for fetching distinct batches
+  getEnrollmentStats,
+  getUnenrolledStudents, // NEW EXPORT for getting unenrolled students in a batch
 };
