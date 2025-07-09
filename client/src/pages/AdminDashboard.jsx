@@ -7,6 +7,7 @@ import Modal from "../components/Modal";
 import ClearSessionButton from "../components/ClearSessionButton"; // Assuming you have this component
 import DownloadReportsButton from "../components/DownloadReportsButton";
 import BulkUploadStudents from "../components/BulkUploadStudents";
+import EnrollmentStatsModal from "../components/EnrollmentStatsModal";
 // Heroicon Imports - Solid Icons
 import {
   PlusCircleIcon,
@@ -871,6 +872,7 @@ function AdminDashboard({ user, onLogout }) {
             <UserGroupIcon className="w-6 h-6 mr-3" />
             View All Students
           </button>
+          <EnrollmentStatsModal user={user} />
           {/* Render the new ClearSessionButton component */}
           <ClearSessionButton
             user={user}
