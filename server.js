@@ -63,20 +63,23 @@ app.use('/api/students',studentRoutes);
 //     res.sendFile(path.join(buildPath, 'index.html'));
 //   });
 // }
+// server.js (updated production block)
+
 if (process.env.NODE_ENV === 'production') {
-  const clientPath = path.join(__dirname, 'client', 'build'); // Corrected path.join for clarity
-  console.log('DEBUG: clientPath calculated:', clientPath); // <--- NEW DEBUG LOG
-  app.use(express.static(clientPath)); // <--- KEEP THIS ENABLED
+  const clientPath = path.join(__dirname, 'client', 'build');
+  console.log('DEBUG: clientPath calculated:', clientPath);
+  app.use(express.static(clientPath));
 
-  // TEMPORARILY COMMENT OUT THE app.get('*') ROUTE
-  // app.get('*', (req, res) => {
-  //   if (req.path.startsWith('/api/')) {
-  //     return res.status(404).end();
-  //   }
-  //   res.sendFile(path.join(clientPath, 'index.html'));
-  // });
+  // Re-enable app.get('*') but simplify its content for testing
+  app.get('*', (req, res) => {
+    // TEMPORARILY COMMENT OUT THIS IF CONDITION
+    // if (req.path.startsWith('/api/')) {
+    //   return res.status(404).end();
+    // }
+
+    res.sendFile(path.join(clientPath, 'index.html')); // Keep this line
+  });
 }
-
 // --- Error Handler ---
 app.use(errorHandler);
 
