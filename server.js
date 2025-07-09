@@ -77,7 +77,7 @@ if (process.env.NODE_ENV === 'production') {
     //   return res.status(404).end();
     // }
 
-    res.sendFile(path.join(clientPath, 'index.html')); // Keep this line
+   res.send('<h1>Welcome to the Elective Portal (Production Fallback)</h1>'); // Keep this line
   });
 }
 // --- Error Handler ---
