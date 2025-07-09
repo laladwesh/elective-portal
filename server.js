@@ -36,18 +36,6 @@ app.use(morgan('dev'));
 // Use Auth Routes
 const authRoutes = require('./routes/authRoutes'); // Import your new auth routes
 app.use('/api/auth', authRoutes); // Mount auth routes under /api/auth
-
-// OLD GOOGLE ID TOKEN VERIFICATION ROUTE - REMOVE THIS BLOCK
-/*
-const { OAuth2Client } = require('google-auth-library');
-const User = require('./models/User');
-const generateToken = require('./utils/generateToken');
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-app.post('/api/auth/google', async (req, res, next) => {
-    // ... (your old ID token verification logic)
-});
-*/
-
 // Production static file serving
 if (process.env.NODE_ENV === "production") {
     const clientPath = path.join(__dirname, "../client/build"); // Correct path to client build folder
