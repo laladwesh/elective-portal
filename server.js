@@ -63,13 +63,18 @@ app.use('/api/students',studentRoutes);
 //     res.sendFile(path.join(buildPath, 'index.html'));
 //   });
 // }
-if (process.env.NODE_ENV === "production") {
-  const clientPath = path.join(__dirname, "client/build");
-  app.use(express.static(clientPath));
-  app.get("*", (req, res) => {
-    if (req.path.startsWith("/api/")) return res.status(404).end();
-    res.sendFile(path.join(clientPath, "index.html"));
-  });
+if (process.env.NODE_ENV === 'production') {
+  const clientPath = path.join(__dirname, 'client', 'build'); // Corrected path.join for clarity
+  console.log('DEBUG: clientPath calculated:', clientPath); // <--- NEW DEBUG LOG
+  app.use(express.static(clientPath)); // <--- KEEP THIS ENABLED
+
+  // TEMPORARILY COMMENT OUT THE app.get('*') ROUTE
+  // app.get('*', (req, res) => {
+  //   if (req.path.startsWith('/api/')) {
+  //     return res.status(404).end();
+  //   }
+  //   res.sendFile(path.join(clientPath, 'index.html'));
+  // });
 }
 
 // --- Error Handler ---
