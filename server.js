@@ -1,60 +1,65 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const courseRoutes = require('./routes/courseRoutes');
+// server.js
+const express   = require('express');
+const dotenv    = require('dotenv');
+const path      = require('path');
+const morgan    = require('morgan');
+const cors      = require('cors');
+const passport  = require('passport');
+
+const connectDB     = require('./config/db');
+const errorHandler  = require('./middleware/errorHandler');
+const authRoutes    = require('./routes/authRoutes');
+const courseRoutes  = require('./routes/courseRoutes');
 const studentRoutes = require('./routes/studentRoutes');
-const errorHandler = require('./middleware/errorHandler');
-const morgan = require('morgan');
-const cors = require('cors');
-const passport = require('passport'); // Import Passport
-const path = require('path'); // Import path module for production serving
 
-// Load environment variables
-dotenv.config({ path: './.env' });
+// load .env
+dotenv.config();
 
-// Connect to database
+// connect to Mongo
 connectDB();
 
 const app = express();
 
-// Passport config - MUST BE CALLED BEFORE Passport routes
-require('./config/passport')(passport); // Pass passport object to config
-
-// Middleware
+// --- Middlewares ---
 app.use(cors({
-    origin: process.env.FRONTEND_URL, // Use FRONTEND_URL from .env
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
+  origin: process.env.FRONTEND_URL,    // e.g. https://your-frontend.com
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
 }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Passport middleware (if you use sessions, otherwise can be skipped for stateless JWT)
-// app.use(passport.initialize());
-// If you use passport sessions: app.use(passport.session());
+// passport config & init (needed if you’re using JWT or sessions)
+require('./config/passport')(passport);
+app.use(passport.initialize());
+// if you ever use sessions: app.use(passport.session());
 
-// Use Auth Routes
-const authRoutes = require('./routes/authRoutes'); // Import your new auth routes
-app.use('/api/auth', authRoutes); // Mount auth routes under /api/auth
-// Production static file serving
-if (process.env.NODE_ENV === "production") {
-    const clientPath = path.join(__dirname, "../client/build"); // Correct path to client build folder
-    app.use(express.static(clientPath));
-    app.get("*", (req, res) => {
-        if (req.path.startsWith("/api/")) return res.status(404).end(); // Don't serve index.html for API routes
-        res.sendFile(path.join(clientPath, "index.html"));
-    });
+// --- API Routes ---
+app.use('/api/auth',    authRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/students',studentRoutes);
+
+// --- Serve React in Production ---
+if (process.env.NODE_ENV === 'production') {
+  // point to client/build, _not_ ../client/build
+  const buildPath = path.join(__dirname, 'client', 'build');
+  app.use(express.static(buildPath));
+
+  // any GET that isn’t /api/* should return index.html
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).end();
+    }
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
 }
 
-// Other Routes
-app.use('/api/courses', courseRoutes);
-app.use('/api/students', studentRoutes);
-
-// Error handling middleware
+// --- Error Handler ---
 app.use(errorHandler);
 
+// --- Start Server ---
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
