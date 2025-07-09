@@ -10,52 +10,52 @@ module.exports = function(passport) {
         callbackURL: process.env.GOOGLE_CALLBACK_URL, // This must be your backend callback URL
       },
       async (accessToken, refreshToken, profile, done) => {
-        const newUser = {
+        const newUserInfo = { // Renamed to avoid confusion with potential new user creation
           googleId: profile.id,
           name: profile.displayName,
           email: profile.emails[0].value,
-          // Role will be determined upon first login if not explicitly set
-          // For simplicity, default to 'student' or handle based on admin emails
-          role: 'student', // Default role for new users
-          batch: 'Unassigned', // Default batch for new students
+          // We no longer set role/batch here for *new* users, as new users are not created.
         };
 
         try {
-          let user = await User.findOne({ email: newUser.email });
+          // Attempt to find an existing user by email
+          let user = await User.findOne({ email: newUserInfo.email });
 
           if (user) {
-            // If user exists, update their name if it changed, or just return them
-            user.googleId = newUser.googleId; // Update googleId in case it changed or wasn't there
-            if (user.name !== newUser.name) {
-                user.name = newUser.name;
+            // If user exists, update their Google ID and name if changed, then proceed with login
+            user.googleId = newUserInfo.googleId; // Update googleId in case it changed or wasn't there
+            if (user.name !== newUserInfo.name) {
+                user.name = newUserInfo.name;
             }
-            await user.save();
-            done(null, user);
+            await user.save(); // Save any updates
+            done(null, user); // User found and updated, proceed with authentication
           } else {
-            // If new user, check if they are an admin based on email (optional)
-            const adminEmails = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : [];
-            if (adminEmails.includes(newUser.email)) {
-                newUser.role = 'admin';
-                newUser.batch = undefined; // Admins don't have a batch
-            }
-            user = await User.create(newUser);
-            done(null, user);
+            // If user DOES NOT exist in the database, deny login.
+            // Calling done(null, false) indicates authentication failure.
+            // The message can be accessed by Passport's failureFlash option if configured,
+            // or simply signals failure to the redirect logic in your route.
+            console.log(`Login attempt for unregistered email: ${newUserInfo.email}`);
+            return done(null, false, { message: 'User not registered. Please contact the administrator.' });
           }
         } catch (err) {
-          console.error(err);
-          done(err, null);
+          console.error('Error during Google authentication:', err);
+          done(err, null); // Pass error to Passport
         }
       }
     )
   );
 
-  // Passport session management (optional, but good practice if you use sessions)
-  // Not strictly needed if you're using JWTs for stateless auth after initial login.
-  // passport.serializeUser((user, done) => {
-  //   done(null, user.id);
-  // });
+  // Passport serialization/deserialization (typically remains the same)
+  passport.serializeUser((user, done) => {
+    done(null, user.id);
+  });
 
-  // passport.deserializeUser((id, done) => {
-  //   User.findById(id, (err, user) => done(err, user));
-  // });
+  passport.deserializeUser(async (id, done) => {
+    try {
+      const user = await User.findById(id);
+      done(null, user);
+    } catch (err) {
+      done(err, null);
+    }
+  });
 };
