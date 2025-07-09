@@ -24,6 +24,7 @@ console.log('DEBUG: GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? '
 console.log('DEBUG: GOOGLE_CALLBACK_URL:', process.env.GOOGLE_CALLBACK_URL); // <-- CRITICAL ONE
 console.log('DEBUG: FRONTEND_URL:', process.env.FRONTEND_URL);
 console.log('DEBUG: NODE_ENV:', process.env.NODE_ENV);
+
 // --- Middlewares ---
 app.use(cors({
   origin: process.env.FRONTEND_URL,    // e.g. https://your-frontend.com
@@ -40,24 +41,28 @@ app.use(passport.initialize());
 // if you ever use sessions: app.use(passport.session());
 
 // --- API Routes ---
-app.use('/api/auth',    authRoutes);
+// Keep these commented out from previous debugging step if they were the issue,
+// or uncomment them if you've already verified they are not the source of the error.
+// For now, let's assume they are NOT the source based on your last message.
+app.use('/api/auth',     authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/students',studentRoutes);
 
 // --- Serve React in Production ---
-if (process.env.NODE_ENV === 'production') {
-  // point to client/build, _not_ ../client/build
-  const buildPath = path.join(__dirname, 'client', 'build');
-  app.use(express.static(buildPath));
+// TEMPORARILY COMMENT OUT THIS ENTIRE BLOCK FOR DEBUGGING
+// if (process.env.NODE_ENV === 'production') {
+//   // point to client/build, _not_ ../client/build
+//   const buildPath = path.join(__dirname, 'client', 'build');
+//   app.use(express.static(buildPath));
 
-  // any GET that isn’t /api/* should return index.html
-  app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).end();
-    }
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
-}
+//   // any GET that isn’t /api/* should return index.html
+//   app.get('*', (req, res) => {
+//     if (req.path.startsWith('/api/')) {
+//       return res.status(404).end();
+//     }
+//     res.sendFile(path.join(buildPath, 'index.html'));
+//   });
+// }
 
 // --- Error Handler ---
 app.use(errorHandler);
