@@ -19,7 +19,11 @@ dotenv.config();
 connectDB();
 
 const app = express();
-
+console.log('DEBUG: GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not Set');
+console.log('DEBUG: GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not Set');
+console.log('DEBUG: GOOGLE_CALLBACK_URL:', process.env.GOOGLE_CALLBACK_URL); // <-- CRITICAL ONE
+console.log('DEBUG: FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('DEBUG: NODE_ENV:', process.env.NODE_ENV);
 // --- Middlewares ---
 app.use(cors({
   origin: process.env.FRONTEND_URL,    // e.g. https://your-frontend.com
