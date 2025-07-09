@@ -11,7 +11,10 @@ const {
   getMyEnrollments,
   bulkDeleteCourses,
   getAllEnrollmentsWithDetails,
-  createBatchCourses
+  createBatchCourses,
+  getBatches,
+  getEnrollmentStats,
+  getUnenrolledStudents
 } = require('../controllers/courseController');
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
 const router = express.Router();
@@ -36,9 +39,14 @@ router.get('/:id/enrollments', protect, authorizeRoles('admin'), getCourseEnroll
 // Student and Admin can get courses (student gets filtered)
 router.get('/', protect, getCourses);
 
+//Enrollment routes
+router.get('/enrollment-stats', protect, authorizeRoles('admin'), getEnrollmentStats);
+router.get('/unenrolled-students/:batch', protect, authorizeRoles('admin'), getUnenrolledStudents);
+
 // Student routes
 router.post('/:id/enroll', protect, authorizeRoles('student'), enrollInCourse);
 router.get('/my-enrollments', protect, authorizeRoles('student'), getMyEnrollments);
 
+router.get('/batches', protect, authorizeRoles('admin'), getBatches);
 
 module.exports = router;
