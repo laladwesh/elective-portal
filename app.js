@@ -42,11 +42,15 @@ app.use('/api/students', require('./routes/studentRoutes'));
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, 'client', 'build');
   app.use(express.static(buildPath));
-  app.get('*', (req, res, next) => {
+  console.log(`Serving static files from ${buildPath}`);
+
+  // catch-all *after* your /api routes:
+  app.get('/{*any}', (req, res, next) => {
     if (req.originalUrl.startsWith('/api/')) return next();
     res.sendFile(path.join(buildPath, 'index.html'));
   });
 }
+
 
 // ——— Error handler (keep it last)
 app.use(errorHandler);
