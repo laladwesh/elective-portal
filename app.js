@@ -10,7 +10,7 @@ const connectDB    = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
 // ——— Passport ✚ DB
-require('./config/passport');    // your strategy file should import passport itself
+require('./config/passport')(passport);   // your strategy file should import passport itself
 connectDB();
 
 const app = express();
