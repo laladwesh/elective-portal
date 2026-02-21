@@ -2,6 +2,7 @@ import React from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { TrashIcon } from '@heroicons/react/24/solid'; // Using TrashIcon for this button too
+import { courseAPI } from '../services/apiService';
 
 /**
  * ClearSessionButton Component
@@ -19,7 +20,7 @@ function ClearSessionButton({ user, onSessionCleared }) {
             try {
                 toast.loading("Clearing all data...", { id: "clearSessionToast" });
                 // Make a DELETE request to the new backend endpoint
-                await axios.delete(`/api/courses/clear-all`, {
+                await courseAPI.clearAll({
                     headers: {
                         Authorization: `Bearer ${user?.token}`,
                     },
