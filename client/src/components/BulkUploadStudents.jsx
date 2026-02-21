@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { CloudArrowUpIcon, DocumentArrowDownIcon } from '@heroicons/react/24/solid'; // Icons
+import { studentAPI } from '../services/apiService';
 
 /**
  * BulkUploadStudents Component
@@ -44,7 +45,7 @@ function BulkUploadStudents({ user, config, onUploadSuccess }) {
         formData.append("excelFile", selectedFile); // 'excelFile' must match the backend's multer field name
 
         try {
-            const res = await axios.post('/api/students/bulk-upload', formData, {
+            const res = await studentAPI.bulkUpload(formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data', // Important for file uploads
                     ...config().headers, // Include authorization token
