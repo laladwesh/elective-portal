@@ -1,0 +1,48 @@
+name: Deploy Elective Portal
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+
+          script: |
+            set -e
+
+            echo "Navigating to elective directory..."
+            cd ~/elective-portal
+
+            echo "Resetting local changes..."
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+
+            echo "Installing backend dependencies..."
+            npm install --production
+
+            echo "Installing frontend dependencies..."
+            cd client
+            npm install
+
+            echo "Building frontend..."
+            npm run build
+
+            echo "Restarting PM2 process..."
+            cd ..
+            pm2 reload elective --update-env
+
+            echo "Elective deployment completed successfully!"
