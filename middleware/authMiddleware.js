@@ -10,14 +10,26 @@ const protect = asyncHandler(async (req, res, next) => {
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
 
+      // Check if token is actually present and not undefined/null
+      if (!token || token === 'undefined' || token === 'null') {
+        res.status(401);
+        throw new Error('Not authorized, invalid token');
+      }
+
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from the token
       req.user = await User.findById(decoded.id).select('-password'); // No password field anyway, but good practice
+      
+      if (!req.user) {
+        res.status(401);
+        throw new Error('Not authorized, user not found');
+      }
+      
       next();
     } catch (error) {
-      console.error(error);
+      console.error('Auth Error:', error.message);
       res.status(401);
       throw new Error('Not authorized, token failed');
     }
