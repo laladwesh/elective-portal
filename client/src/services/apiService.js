@@ -3,13 +3,11 @@ import axios from 'axios';
 // ========================================
 // API BASE URL CONFIGURATION
 // ========================================
-// Change this to modify the base path for all API calls
-const API_BASE_PATH = '/elective/api';
-
-// For development, you can use absolute URLs:
-// const API_BASE_PATH = process.env.NODE_ENV === 'development' 
-//   ? 'http://localhost:4000/api' 
-//   : '/elective/api';
+// In development: use '/api' (proxy forwards to backend)
+// In production: use '/elective/api' (reverse proxy strips '/elective' prefix)
+const API_BASE_PATH = process.env.NODE_ENV === 'production' 
+  ? '/elective/api' 
+  : '/api';
 
 // ========================================
 // AUTHENTICATION ENDPOINTS
@@ -22,7 +20,7 @@ export const authAPI = {
    */
   getGoogleAuthUrl: () => {
     if (process.env.NODE_ENV === 'development') {
-      return `http://localhost:4000${API_BASE_PATH}/auth/google`;
+      return `http://localhost:5000/api/auth/google`;
     }
     return `${API_BASE_PATH}/auth/google`;
   },
@@ -111,6 +109,13 @@ export const courseAPI = {
    * @param {object} config - Axios config with auth headers
    */
   getAllDetails: (config) => axios.get(`${API_BASE_PATH}/courses/all-details`, config),
+
+  /**
+   * Close enrollment for all courses in a specific batch
+   * @param {string} batch - Batch year/number
+   * @param {object} config - Axios config with auth headers
+   */
+  closeBatchEnrollment: (batch, config) => axios.put(`${API_BASE_PATH}/courses/close-batch-enrollment`, { batch }, config),
 };
 
 // ========================================
@@ -130,6 +135,14 @@ export const studentAPI = {
    * @param {object} config - Axios config with auth headers
    */
   create: (data, config) => axios.post(`${API_BASE_PATH}/students`, data, config),
+
+  /**
+   * Update a student by ID
+   * @param {string} studentId - Student ID
+   * @param {object} data - Updated student data
+   * @param {object} config - Axios config with auth headers
+   */
+  update: (studentId, data, config) => axios.put(`${API_BASE_PATH}/students/${studentId}`, data, config),
 
   /**
    * Bulk upload students via Excel file
