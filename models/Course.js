@@ -33,4 +33,13 @@ const courseSchema = new mongoose.Schema({
   },
 });
 
+// Index for efficient batch-based queries
+courseSchema.index({ batch: 1 });
+
+// Index for enrollment status queries
+courseSchema.index({ isEnrollmentActive: 1 });
+
+// Compound index for batch + enrollment status (common query pattern)
+courseSchema.index({ batch: 1, isEnrollmentActive: 1 });
+
 module.exports = mongoose.model('Course', courseSchema);
