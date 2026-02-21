@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { courseAPI, studentAPI } from '../services/apiService';
 
 // Import your Modal component
 import Modal from "../components/Modal";
@@ -125,7 +126,7 @@ function AdminDashboard({ user, onLogout }) {
   // Fetch all courses (for admin's table)
   const fetchCourses = useCallback(async () => {
     try {
-      const res = await axios.get(`/api/courses`, config());
+      const res = await courseAPI.getAll(config());
       setCourses(res.data);
       // Set the first batch as active tab for courses if not already set
       if (res.data.length > 0 && !activeCourseBatchTab) {
@@ -145,7 +146,7 @@ function AdminDashboard({ user, onLogout }) {
   const fetchAllStudents = useCallback(async () => {
     setIsLoadingStudents(true);
     try {
-      const res = await axios.get(`/api/students`, config());
+      const res = await studentAPI.getAll(config());
       setAllStudents(res.data);
       // Set the first batch as active tab by default if not already set
       if (res.data.length > 0 && !activeStudentBatchTab) {
@@ -243,8 +244,7 @@ function AdminDashboard({ user, onLogout }) {
     }
     try {
       toast.loading("Creating courses...", { id: "createCourseToast" });
-      await axios.post(
-        `/api/courses/batch-courses`,
+      await courseAPI.createBatchCourses(
         {
           batch,
           enrollmentOpenTime: timeToSend,
@@ -279,7 +279,7 @@ function AdminDashboard({ user, onLogout }) {
     e.preventDefault();
     try {
       toast.loading("Adding student...", { id: "addStudentToast" });
-      await axios.post(`/api/students`, newStudent, config());
+      await studentAPI.create(newStudent, config());
       toast.success("Student added successfully!", { id: "addStudentToast" });
       setNewStudent({ name: "", email: "", batch: "" });
       fetchAllStudents(); // Refresh student list when a new student is added
@@ -311,10 +311,7 @@ function AdminDashboard({ user, onLogout }) {
     setIsEnrollmentModalOpen(true);
     setIsLoadingEnrollments(true);
     try {
-      const res = await axios.get(
-        `/api/courses/${courseId}/enrollments`,
-        config()
-      );
+      const res = await courseAPI.getEnrollments(courseId, config());
       setCourseEnrollments(res.data);
       toast.success(`Enrollments for ${courseName} loaded.`);
     } catch (error) {
@@ -423,8 +420,8 @@ function AdminDashboard({ user, onLogout }) {
 
     try {
       toast.loading("Updating course...", { id: "updateCourseToast" });
-      await axios.put(
-        `/api/courses/${editingCourse._id}`,
+      await courseAPI.update(
+        editingCourse._id,
         {
           ...editFormData,
           enrollmentOpenTime: timeToSend,
@@ -481,7 +478,7 @@ function AdminDashboard({ user, onLogout }) {
       try {
         toast.loading("Deleting courses...", { id: "deleteCoursesToast" });
         // Send selectedCourseIds in the request body for DELETE
-        await axios.delete(`/api/courses/bulk-delete`, {
+        await courseAPI.bulkDelete({
           data: { ids: selectedCourseIds }, // DELETE with body requires 'data' key
           ...config(), // Spread the config after data to ensure headers are applied
         });
@@ -544,10 +541,10 @@ function AdminDashboard({ user, onLogout }) {
 
     try {
       if (deleteMode === "single" && studentToDelete) {
-        await axios.delete(`/api/students/${studentToDelete}`, config());
+        await studentAPI.delete(studentToDelete, config());
         toast.success("Student deleted successfully!");
       } else if (deleteMode === "bulk" && selectedStudentIds.length > 0) {
-        await axios.delete(`/api/students/bulk-delete`, {
+        await studentAPI.bulkDelete({
           ...config(),
           data: { ids: selectedStudentIds },
         });
