@@ -3,51 +3,64 @@ const Enrollment = require('../models/Enrollment');
 const asyncHandler = require('express-async-handler');
 const XLSX = require('xlsx'); // <--- ADD THIS LINE
 
-// @desc    Admin adds a new student (creates a record for a student who will eventually log in with Google)
+// @desc    Admin adds a new user (student or admin)
 // @route   POST /api/students
 // @access  Private/Admin
 const addStudentByAdmin = asyncHandler(async (req, res) => {
-  const { name, email, batch } = req.body; // No password in req.body for OAuth users
+  const { name, batch, role = 'student' } = req.body;
+  const email = req.body.email ? req.body.email.trim().toLowerCase() : null;
 
-  if (!name || !email || !batch) {
+  if (!name || !email) {
     res.status(400);
-    throw new Error('Please enter all required fields for the student (Name, Email, Batch)');
+    throw new Error('Please enter all required fields (Name, Email)');
   }
 
-  const studentExists = await User.findOne({ email });
-  if (studentExists) {
+  // Validate that students must have a batch
+  if (role === 'student' && !batch) {
     res.status(400);
-    throw new Error('Student with this email already exists');
+    throw new Error('Batch is required for students');
   }
 
-  // Create student with 'student' role. They will authenticate via Google later.
-  const student = await User.create({
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    res.status(400);
+    throw new Error('User with this email already exists');
+  }
+
+  // Create user with specified role. They will authenticate via Google later.
+  const userData = {
     name,
     email,
-    batch,
-    role: 'student',
-  });
+    role,
+  };
 
-  if (student) {
+  // Only add batch for students
+  if (role === 'student') {
+    userData.batch = batch;
+  }
+
+  const newUser = await User.create(userData);
+
+  if (newUser) {
     res.status(201).json({
-      _id: student._id,
-      name: student.name,
-      email: student.email,
-      batch: student.batch,
-      role: student.role,
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      batch: newUser.batch,
+      role: newUser.role,
     });
   } else {
     res.status(400);
-    throw new Error('Invalid student data');
+    throw new Error('Invalid user data');
   }
 });
 
-// @desc    Get all students (Admin only)
+// @desc    Get all users (students and admins) for admin management
 // @route   GET /api/students
 // @access  Private/Admin
 const getAllStudents = asyncHandler(async (req, res) => {
-  const students = await User.find({ role: 'student' }); // No password to select out
-  res.status(200).json(students);
+  const users = await User.find({}); // Get all users (students and admins)
+  res.status(200).json(users);
 });
 
 // @desc    Admin deletes a student and their associated enrollments
@@ -64,10 +77,22 @@ const deleteStudent = asyncHandler(async (req, res) => {
     throw new Error('Student not found');
   }
 
-  // 2. Delete all enrollments associated with this student
+  // 2. Get all enrollments for this student to update course counts
+  const enrollments = await Enrollment.find({ student: studentId });
+  
+  // 3. Decrement enrolledStudentsCount for each course the student was enrolled in
+  const Course = require('../models/Course');
+  for (const enrollment of enrollments) {
+    await Course.findByIdAndUpdate(
+      enrollment.course,
+      { $inc: { enrolledStudentsCount: -1 } }
+    );
+  }
+
+  // 4. Delete all enrollments associated with this student
   await Enrollment.deleteMany({ student: studentId });
 
-  // 3. Delete the student record
+  // 5. Delete the student record
   await student.deleteOne();
 
   res.status(200).json({ message: 'Student and associated enrollments removed successfully.' });
@@ -84,10 +109,30 @@ const bulkDeleteStudents = asyncHandler(async (req, res) => {
     throw new Error('Please provide an array of student IDs to delete.');
   }
 
-  // 1. Delete all enrollments associated with these students
+  // 1. Get all enrollments for these students to update course counts
+  const enrollments = await Enrollment.find({ student: { $in: ids } });
+  
+  // 2. Decrement enrolledStudentsCount for each affected course
+  const Course = require('../models/Course');
+  const courseUpdates = {}; // Map to track how many students to decrement per course
+  
+  for (const enrollment of enrollments) {
+    const courseId = enrollment.course.toString();
+    courseUpdates[courseId] = (courseUpdates[courseId] || 0) + 1;
+  }
+  
+  // 3. Batch update all affected courses
+  for (const [courseId, decrementBy] of Object.entries(courseUpdates)) {
+    await Course.findByIdAndUpdate(
+      courseId,
+      { $inc: { enrolledStudentsCount: -decrementBy } }
+    );
+  }
+
+  // 4. Delete all enrollments associated with these students
   await Enrollment.deleteMany({ student: { $in: ids } });
 
-  // 2. Delete the students themselves
+  // 5. Delete the students themselves
   const deleteResult = await User.deleteMany({ _id: { $in: ids }, role: 'student' }); // Ensure only students are deleted
 
   if (deleteResult.deletedCount === 0) {
@@ -184,10 +229,59 @@ const bulkAddStudents = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Admin updates a student
+// @route   PUT /api/students/:id
+// @access  Private/Admin
+const updateStudent = asyncHandler(async (req, res) => {
+  const studentId = req.params.id;
+  const { name, batch, role } = req.body;
+  const email = req.body.email ? req.body.email.trim().toLowerCase() : undefined;
+
+  // Find the student
+  const student = await User.findById(studentId);
+
+  if (!student) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Check if email is being changed and if it's already taken by another user
+  if (email && email !== student.email) {
+    const emailExists = await User.findOne({ email, _id: { $ne: studentId } });
+    if (emailExists) {
+      res.status(400);
+      throw new Error('Email is already in use by another user');
+    }
+  }
+
+  // Validate that students have a batch
+  if (role === 'student' && !batch) {
+    res.status(400);
+    throw new Error('Batch is required for students');
+  }
+
+  // Update fields
+  if (name) student.name = name;
+  if (email) student.email = email;
+  if (batch !== undefined) student.batch = batch; // Allow clearing batch for non-students
+  if (role) student.role = role;
+
+  const updatedStudent = await student.save();
+
+  res.status(200).json({
+    _id: updatedStudent._id,
+    name: updatedStudent.name,
+    email: updatedStudent.email,
+    batch: updatedStudent.batch,
+    role: updatedStudent.role,
+  });
+});
+
 
 module.exports = {
   addStudentByAdmin,
   getAllStudents,
+  updateStudent,
   deleteStudent,
   bulkDeleteStudents,
   bulkAddStudents, // <--- ADD THIS LINE
