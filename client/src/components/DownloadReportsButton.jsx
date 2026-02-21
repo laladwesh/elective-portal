@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { ArrowDownTrayIcon, DocumentTextIcon, TableCellsIcon } from '@heroicons/react/24/solid'; // Icons for download, PDF, Excel
+import { courseAPI } from '../services/apiService';
 
 // PDF Libraries
 import { Document, Page, Text, View, StyleSheet, Font, pdf } from '@react-pdf/renderer';
@@ -164,7 +165,7 @@ function DownloadReportsButton({ user, config }) {
             // Example structure:
             // GET /api/enrollments/all-details
             // Response: [ { _id: 'e1', student: {name, email, batch}, course: {courseName, batch}, enrollmentDate }, ... ]
-            const res = await axios.get('/api/courses/all-details', config());
+            const res = await courseAPI.getAllDetails(config());
             return res.data;
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to fetch enrollment data for reports.");
