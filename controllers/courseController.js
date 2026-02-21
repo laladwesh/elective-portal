@@ -3,6 +3,39 @@ const Enrollment = require('../models/Enrollment');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 
+// ========================================
+// UTILITY FUNCTION: AUTO-ACTIVATE COURSES
+// ========================================
+// Automatically activates courses whose enrollment open time has passed
+const autoActivateCourses = async () => {
+  try {
+    const currentTimeUTC = new Date(); // Current time in UTC
+    
+    // Find courses that:
+    // 1. Have an enrollmentOpenTime set
+    // 2. Are not yet active
+    // 3. Current time >= enrollmentOpenTime
+    const result = await Course.updateMany(
+      {
+        enrollmentOpenTime: { $ne: null, $lte: currentTimeUTC },
+        isEnrollmentActive: false
+      },
+      {
+        $set: { isEnrollmentActive: true }
+      }
+    );
+    
+    if (result.modifiedCount > 0) {
+      console.log(`✓ Auto-activated ${result.modifiedCount} courses based on enrollment open time`);
+    }
+    
+    return result.modifiedCount;
+  } catch (error) {
+    console.error('Error in autoActivateCourses:', error);
+    return 0;
+  }
+};
+
 // @desc    Admin adds a new single course
 // @route   POST /api/courses
 // @access  Private/Admin
@@ -36,9 +69,9 @@ const addCourse = asyncHandler(async (req, res) => {
 const createBatchCourses = asyncHandler(async (req, res) => {
   const { batch, enrollmentOpenTime, isEnrollmentActive, courses } = req.body;
 
-  if (!batch || !enrollmentOpenTime || typeof isEnrollmentActive === 'undefined' || !courses || !Array.isArray(courses) || courses.length === 0) {
+  if (!batch || typeof isEnrollmentActive === 'undefined' || !courses || !Array.isArray(courses) || courses.length === 0) {
     res.status(400);
-    throw new Error('Please provide batch, enrollment time, active status, and a list of courses.');
+    throw new Error('Please provide batch, active status, and a list of courses.');
   }
 
   // Validate individual courses data and check for duplicates within the batch
@@ -62,8 +95,38 @@ const createBatchCourses = asyncHandler(async (req, res) => {
     }
   }
 
-  // Create Date object from IST string (frontend sends with +05:30 offset).
-  const openTimeUTC = new Date(enrollmentOpenTime);
+  // ========================================
+  // ENROLLMENT ACTIVATION LOGIC (IST-aware)
+  // ========================================
+  let openTimeUTC;
+  let finalIsEnrollmentActive = isEnrollmentActive;
+
+  if (isEnrollmentActive) {
+    // Checkbox is CHECKED: Activate NOW
+    openTimeUTC = new Date(); // Set to current time (UTC)
+    finalIsEnrollmentActive = true;
+  } else {
+    // Checkbox is NOT CHECKED: Use provided time or null
+    if (enrollmentOpenTime) {
+      // Frontend sends datetime-local value which is already in IST format
+      // Convert it to UTC Date object
+      openTimeUTC = new Date(enrollmentOpenTime);
+      
+      // Check if the open time is in the past
+      const currentTimeUTC = new Date();
+      if (openTimeUTC <= currentTimeUTC) {
+        // If open time is in the past, activate immediately
+        finalIsEnrollmentActive = true;
+      } else {
+        // If open time is in the future, keep inactive
+        finalIsEnrollmentActive = false;
+      }
+    } else {
+      // No open time provided and not active
+      openTimeUTC = null;
+      finalIsEnrollmentActive = false;
+    }
+  }
 
   const newCourses = courses.map(courseData => ({
     courseName: courseData.courseName,
@@ -71,7 +134,7 @@ const createBatchCourses = asyncHandler(async (req, res) => {
     intakeCapacity: courseData.intakeCapacity,
     enrolledStudentsCount: 0, // Initialize to 0
     enrollmentOpenTime: openTimeUTC,
-    isEnrollmentActive: isEnrollmentActive,
+    isEnrollmentActive: finalIsEnrollmentActive,
   }));
 
   const createdCourses = await Course.insertMany(newCourses);
@@ -87,6 +150,9 @@ const createBatchCourses = asyncHandler(async (req, res) => {
 // @route   GET /api/courses
 // @access  Private/Admin, Private/Student (filtered)
 const getCourses = asyncHandler(async (req, res) => {
+  // First, auto-activate any courses whose enrollment time has passed
+  await autoActivateCourses();
+  
   let query = {};
   if (req.user.role === 'student') {
     // Students only see courses for their specific batch or 'All'
@@ -176,6 +242,55 @@ const bulkDeleteCourses = asyncHandler(async (req, res) => {
   res.status(200).json({ message: `${deleteResult.deletedCount} courses and their associated enrollments removed successfully.` });
 });
 
+// @desc    Close enrollment for all courses in a specific batch
+// @route   PUT /api/courses/close-batch-enrollment
+// @access  Private/Admin
+const closeBatchEnrollment = asyncHandler(async (req, res) => {
+  const { batch } = req.body;
+
+  if (!batch) {
+    res.status(400);
+    throw new Error('Please provide a batch to close enrollment for.');
+  }
+
+  // First, check how many courses are in this batch
+  const totalCourses = await Course.countDocuments({ batch });
+  
+  if (totalCourses === 0) {
+    res.status(404);
+    throw new Error(`No courses found for batch "${batch}".`);
+  }
+
+  // Count how many are already closed
+  const alreadyClosedCount = await Course.countDocuments({ 
+    batch, 
+    isEnrollmentActive: false 
+  });
+
+  // Update all courses for this batch to:
+  // 1. Set isEnrollmentActive to false
+  // 2. Clear enrollmentOpenTime to prevent auto-reactivation
+  const result = await Course.updateMany(
+    { batch, isEnrollmentActive: true }, // Only update courses that are currently active
+    { 
+      $set: { 
+        isEnrollmentActive: false,
+        enrollmentOpenTime: null // Clear the time to prevent auto-reactivation
+      } 
+    }
+  );
+
+  res.status(200).json({
+    message: result.modifiedCount > 0 
+      ? `Successfully closed enrollment for ${result.modifiedCount} course(s) in batch "${batch}".`
+      : `All courses in batch "${batch}" are already closed.`,
+    modifiedCount: result.modifiedCount,
+    totalCourses,
+    alreadyClosedCount,
+    batch
+  });
+});
+
 
 // @desc    Set/Update enrollment opening time and activate/deactivate enrollment
 // @route   PUT /api/courses/:id/set-enrollment-time
@@ -205,7 +320,7 @@ const setEnrollmentTime = asyncHandler(async (req, res) => {
   res.status(200).json(updatedCourse);
 });
 
-// @desc    Student enrolls in a course (First-Come, First-Served, One Course Limit)
+// @desc    Student enrolls in a course (First-Come, First-Served, Atomic & Race-Condition-Free)
 // @route   POST /api/courses/:id/enroll
 // @access  Private/Student
 const enrollInCourse = asyncHandler(async (req, res) => {
@@ -219,14 +334,14 @@ const enrollInCourse = asyncHandler(async (req, res) => {
     throw new Error('You are already enrolled in this course.');
   }
 
-  // 2. Find the course and check availability
+  // 2. Find the course and check basic availability
   const course = await Course.findById(courseId);
   if (!course) {
     res.status(404);
     throw new Error('Course not found.');
   }
 
-  // **START OF NEW ENROLLMENT CONTROL CHECKS**
+  // **START OF ENROLLMENT CONTROL CHECKS**
 
   // Check 1: Is enrollment active for this course?
   if (!course.isEnrollmentActive) {
@@ -256,49 +371,58 @@ const enrollInCourse = asyncHandler(async (req, res) => {
       throw new Error(`Enrollment for this course will open on ${formattedOpenTime} IST.`);
     }
   }
-  // **END OF NEW ENROLLMENT CONTROL CHECKS**
+  // **END OF ENROLLMENT CONTROL CHECKS**
 
-  if (course.enrolledStudentsCount >= course.intakeCapacity) {
+  // **ATOMIC SEAT RESERVATION - RACE CONDITION FIX**
+  // This atomic operation ONLY increments if seats are available
+  // The query condition ensures we only update if enrolledStudentsCount < intakeCapacity
+  // This prevents any race conditions even with thousands of simultaneous requests
+  const updatedCourse = await Course.findOneAndUpdate(
+    {
+      _id: courseId,
+      $expr: { $lt: ['$enrolledStudentsCount', '$intakeCapacity'] }, // Only update if count < capacity (field comparison)
+    },
+    {
+      $inc: { enrolledStudentsCount: 1 }
+    },
+    {
+      new: true, // Return updated document
+      runValidators: true
+    }
+  );
+
+  // If updatedCourse is null, it means the condition wasn't met (course is full)
+  if (!updatedCourse) {
     res.status(409); // Conflict
-    // To prevent a race condition, also mark enrollment as inactive if it just became full
-    // This is a pragmatic approach; for strictness, separate admin action might be preferred.
-    // For now, let's just throw the error.
     throw new Error('Course is full. No seats available.');
   }
 
-  // Atomically increment enrolledStudentsCount
-  const updatedCourse = await Course.findByIdAndUpdate(
-    courseId,
-    { $inc: { enrolledStudentsCount: 1 } },
-    { new: true } // Return the updated document
-  );
+  // 3. Create the enrollment record
+  // At this point, we have successfully reserved a seat atomically
+  try {
+    const enrollment = await Enrollment.create({
+      student: studentId,
+      course: courseId,
+    });
 
-  if (!updatedCourse) {
-    // This case ideally shouldn't happen if findById found it, but for safety
-    res.status(500);
-    throw new Error('Failed to update course enrollment count.');
-  }
-
-  // Defensive check in case another request filled it right after our check
-  // This check is less critical with $inc but good for robustness
-  if (updatedCourse.enrolledStudentsCount > updatedCourse.intakeCapacity) {
-    // Revert the count if it went over
+    res.status(201).json({
+      message: 'Successfully enrolled in course',
+      enrollment,
+      updatedCourse, // Return the updated course with new count
+    });
+  } catch (enrollmentError) {
+    // If enrollment creation fails (e.g., duplicate key), rollback the count
     await Course.findByIdAndUpdate(courseId, { $inc: { enrolledStudentsCount: -1 } });
-    res.status(409); // Conflict
-    throw new Error('No seats available for this course, or another student just took the last seat.');
+    
+    // Check if it's a duplicate enrollment error
+    if (enrollmentError.code === 11000) {
+      res.status(400);
+      throw new Error('You are already enrolled in this course.');
+    }
+    
+    // Re-throw other errors
+    throw enrollmentError;
   }
-
-  // 6. Create the enrollment record
-  const enrollment = await Enrollment.create({
-    student: studentId,
-    course: courseId,
-  });
-
-  res.status(201).json({
-    message: 'Successfully enrolled in course',
-    enrollment,
-    updatedCourse, // Return the updated course with new count
-  });
 });
 
 // @desc    Admin gets all enrollments for a specific course
@@ -448,13 +572,64 @@ const getUnenrolledStudents = asyncHandler(async (req, res) => {
   res.status(200).json(unenrolledStudents);
 });
 
+// @desc    Recalculate and sync enrolledStudentsCount for all courses (Admin utility)
+// @route   POST /api/courses/sync-enrollment-counts
+// @access  Private/Admin
+const syncEnrollmentCounts = asyncHandler(async (req, res) => {
+  // Get all courses
+  const courses = await Course.find({});
+  
+  let updatedCount = 0;
+  let errors = [];
+  
+  for (const course of courses) {
+    try {
+      // Count actual enrollments for this course
+      const actualCount = await Enrollment.countDocuments({ course: course._id });
+      
+      // Only update if there's a mismatch
+      if (course.enrolledStudentsCount !== actualCount) {
+        await Course.findByIdAndUpdate(course._id, {
+          enrolledStudentsCount: actualCount
+        });
+        updatedCount++;
+      }
+    } catch (error) {
+      errors.push({
+        courseId: course._id,
+        courseName: course.courseName,
+        error: error.message
+      });
+    }
+  }
+  
+  if (errors.length > 0) {
+    res.status(207); // Multi-Status
+    return res.json({
+      message: `Synced ${updatedCount} courses with mismatched counts`,
+      updatedCount,
+      totalCourses: courses.length,
+      errors
+    });
+  }
+  
+  res.status(200).json({
+    message: updatedCount > 0 
+      ? `Successfully synced ${updatedCount} courses with mismatched enrollment counts!`
+      : 'All course enrollment counts are already accurate!',
+    updatedCount,
+    totalCourses: courses.length
+  });
+});
+
 module.exports = {
   addCourse,
   getCourses,
   updateCourse,
   deleteCourse, // Keep this if you want single delete endpoint
   bulkDeleteCourses, // NEW EXPORT
-    clearAllCourses,
+  clearAllCourses,
+  closeBatchEnrollment, // NEW EXPORT for closing enrollment for a batch
   setEnrollmentTime,
   enrollInCourse,
   getCourseEnrollments,
@@ -464,4 +639,5 @@ module.exports = {
   getBatches, // NEW EXPORT for fetching distinct batches
   getEnrollmentStats,
   getUnenrolledStudents, // NEW EXPORT for getting unenrolled students in a batch
+  syncEnrollmentCounts, // NEW EXPORT for syncing enrollment counts
 };
