@@ -5,6 +5,7 @@ import Auth from './pages/Auth';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import AuthSuccess from './pages/AuthSuccess';
+import UserManagement from './pages/UserManagement';
 import PrivateRoute from './components/PrivateRoute';
 // REMOVE: import { ToastContainer } from 'react-toastify';
 // REMOVE: import 'react-toastify/dist/ReactToastify.css';
@@ -52,6 +53,22 @@ function App() {
           element={
             <PrivateRoute user={user} allowedRoles={['admin']}>
               <AdminDashboard user={user} onLogout={handleLogout} />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute user={user} allowedRoles={['admin']}>
+              <AdminDashboard user={user} onLogout={handleLogout} />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <PrivateRoute user={user} allowedRoles={['admin']}>
+              <UserManagement user={user} />
             </PrivateRoute>
           }
         />
