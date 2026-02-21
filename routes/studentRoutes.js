@@ -1,5 +1,5 @@
 const express = require('express');
-const { addStudentByAdmin, getAllStudents, deleteStudent, bulkDeleteStudents, bulkAddStudents } = require('../controllers/studentController'); // <--- ADD bulkAddStudents HERE
+const { addStudentByAdmin, getAllStudents, updateStudent, deleteStudent, bulkDeleteStudents, bulkAddStudents } = require('../controllers/studentController'); // <--- ADD updateStudent HERE
 const { protect, authorizeRoles } = require('./../middleware/authMiddleware');
 const router = express.Router();
 
@@ -16,7 +16,8 @@ router.delete('/bulk-delete', protect, authorizeRoles('admin'), bulkDeleteStuden
 // NEW: Bulk upload route for students (requires multer middleware)
 router.post('/bulk-upload', protect, authorizeRoles('admin'), upload.single('excelFile'), bulkAddStudents); // 'excelFile' is the field name for the file input
 
-// General delete by ID route
+// General routes by ID
+router.put('/:id', protect, authorizeRoles('admin'), updateStudent);
 router.delete('/:id', protect, authorizeRoles('admin'), deleteStudent);
 
 module.exports = router;
