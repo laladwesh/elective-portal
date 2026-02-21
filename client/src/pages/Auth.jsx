@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast'; // Correct import for react-hot-toast
+import { authAPI } from '../services/apiService';
 
 function Auth({ setUser }) {
   const navigate = useNavigate();
@@ -27,13 +28,7 @@ function Auth({ setUser }) {
   // Directly navigating to your backend's Google auth initiation route.
 const handleGoogleLoginClick = () => {
   toast.loading("Redirecting to Google…", { id: "oauth" });
-
-  if (process.env.NODE_ENV === "development") {
-    window.location.href = `http://localhost:4000/api/auth/google`;
-    return;
-  }
-
-  window.location.href = `/elective/api/auth/google`;
+  window.location.href = authAPI.getGoogleAuthUrl();
 };
 
   return (
