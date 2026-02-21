@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { courseAPI } from '../services/apiService';
 
 // Heroicon Imports - Solid Icons
 import {
@@ -33,7 +34,7 @@ function StudentDashboard({ user, onLogout }) {
     // Fetch user's own enrollments
     const fetchMyEnrollments = useCallback(async () => {
         try {
-            const res = await axios.get(`/api/courses/my-enrollments`, config()); // Use process.env.REACT_APP_BACKEND_URL
+            const res = await courseAPI.getMyEnrollments(config());
             setMyEnrollments(res.data);
             // Update hasEnrolled state: true if student has at least one enrollment
             setHasEnrolled(res.data.length > 0);
@@ -45,7 +46,7 @@ function StudentDashboard({ user, onLogout }) {
     // Fetch available courses (backend filters by student's batch)
     const fetchAvailableCourses = useCallback(async () => {
         try {
-            const res = await axios.get(`/api/courses`, config()); // Use process.env.REACT_APP_BACKEND_URL
+            const res = await courseAPI.getAll(config());
             setAvailableCourses(res.data);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to fetch available courses');
@@ -71,7 +72,7 @@ function StudentDashboard({ user, onLogout }) {
 
         try {
             toast.loading("Enrolling...", { id: "enrollToast" });
-            await axios.post(`/api/courses/${courseId}/enroll`, {}, config()); // Use process.env.REACT_APP_BACKEND_URL
+            await courseAPI.enroll(courseId, {}, config());
             toast.success('Successfully enrolled in the course!', { id: "enrollToast" });
             setHasEnrolled(true); // Mark as enrolled globally for UI updates
             fetchAvailableCourses(); // Refresh courses to update enrollment counts/statuses
