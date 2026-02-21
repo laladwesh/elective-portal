@@ -25,18 +25,16 @@ function Auth({ setUser }) {
 
   // This is the correct way for your current backend-driven OAuth flow:
   // Directly navigating to your backend's Google auth initiation route.
-  const handleGoogleLoginClick = () => {
-    // Show a loading toast while redirecting
-    toast.loading("Redirecting to Google…", { id: "oauth" }); //
-    if (process.env.NODE_ENV === "development") {
-      // In development, redirect to local server
-      window.location.href = `http://localhost:5000/api/auth/google`;
-      return;
-    }
-    // In production, rely on a relative path assuming a reverse proxy or
-    // similar setup maps /api to the backend.
-    window.location.href = `/api/auth/google`; //
-  };
+const handleGoogleLoginClick = () => {
+  toast.loading("Redirecting to Google…", { id: "oauth" });
+
+  if (process.env.NODE_ENV === "development") {
+    window.location.href = `http://localhost:4000/api/auth/google`;
+    return;
+  }
+
+  window.location.href = `/elective/api/auth/google`;
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-200 p-4">

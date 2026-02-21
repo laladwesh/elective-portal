@@ -42,7 +42,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/elective" >
       <Toaster position="top-center" reverseOrder={false} /> {/* ADD THIS LINE for centered toasts */}
       <Routes>
         <Route path="/" element={<Auth setUser={setUser} />} />

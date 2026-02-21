@@ -2,6 +2,7 @@
   "name": "elective-portal-client",
   "version": "0.1.0",
   "private": true,
+  "homepage": "/elective",
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
