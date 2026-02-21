@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Modal from './Modal'; // Assuming your Modal component is in the same directory
+import { courseAPI } from '../services/apiService';
 
 // Heroicon Imports - Solid Icons
 import {
@@ -177,7 +178,7 @@ function EnrollmentStatsModal({ user }) {
   // Function to fetch all available batches (assuming an API endpoint for this)
   const fetchBatches = useCallback(async () => {
     try {
-      const res = await axios.get('/api/courses/batches', config());
+      const res = await courseAPI.getBatches(config());
       setBatches(res.data);
       if (res.data.length > 0) {
         setSelectedBatch(res.data[0]);
@@ -192,7 +193,7 @@ function EnrollmentStatsModal({ user }) {
   const fetchEnrollmentStats = useCallback(async () => {
     if (!user?.token) return;
     try {
-      const res = await axios.get('/api/courses/enrollment-stats', config());
+      const res = await courseAPI.getEnrollmentStats(config());
       setEnrollmentStats(res.data);
     } catch (error) {
       console.error('Error fetching enrollment stats:', error);
@@ -204,7 +205,7 @@ function EnrollmentStatsModal({ user }) {
   const fetchUnenrolledStudents = useCallback(async (batch) => {
     if (!batch) return;
     try {
-      const res = await axios.get(`/api/courses/unenrolled-students/${batch}`, config());
+      const res = await courseAPI.getUnenrolledStudents(batch, config());
       setUnenrolledStudentsData(res.data);
       toast.success(`Fetched unenrolled students for batch ${batch}.`);
     } catch (error) {
