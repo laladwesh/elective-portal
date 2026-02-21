@@ -12,24 +12,40 @@ import { courseAPI } from '../services/apiService';
  * @param {object} props - Component props.
  * @param {object} props.user - The authenticated user object, containing the token.
  * @param {function} props.onSessionCleared - Callback function to be executed after a successful session clear.
+ * @param {function} props.onRequestConfirmation - Callback to show confirmation modal (optional)
  */
-function ClearSessionButton({ user, onSessionCleared }) {
+function ClearSessionButton({ user, onSessionCleared, onRequestConfirmation }) {
 
-    const handleClearAllCourses = async () => {
-        if (window.confirm("Are you absolutely sure you want to clear ALL courses and ALL student enrollments? This action cannot be undone!")) {
-            try {
-                toast.loading("Clearing all data...", { id: "clearSessionToast" });
-                // Make a DELETE request to the new backend endpoint
-                await courseAPI.clearAll({
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`,
-                    },
-                });
-                toast.success("All courses and enrollments cleared successfully!", { id: "clearSessionToast" });
-                onSessionCleared(); // Notify parent component to refresh data
-            } catch (error) {
-                toast.error(error.response?.data?.message || "Failed to clear session.", { id: "clearSessionToast" });
-                console.error("Error clearing session:", error.response?.data || error);
+    const clearAllCourses = async () => {
+        try {
+            toast.loading("Clearing all data...", { id: "clearSessionToast" });
+            // Make a DELETE request to the new backend endpoint
+            await courseAPI.clearAll({
+                headers: {
+                    Authorization: `Bearer ${user?.token}`,
+                },
+            });
+            toast.success("All courses and enrollments cleared successfully!", { id: "clearSessionToast" });
+            onSessionCleared(); // Notify parent component to refresh data
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to clear session.", { id: "clearSessionToast" });
+            console.error("Error clearing session:", error.response?.data || error);
+        }
+    };
+
+    const handleClearAllCourses = () => {
+        if (onRequestConfirmation) {
+            // Use parent's confirmation modal
+            onRequestConfirmation({
+                title: 'Clear All Data',
+                message: 'Are you absolutely sure you want to clear ALL courses and ALL student enrollments? This action cannot be undone!',
+                onConfirm: clearAllCourses,
+                variant: 'danger'
+            });
+        } else {
+            // Fallback to window.confirm if no modal callback provided
+            if (window.confirm("Are you absolutely sure you want to clear ALL courses and ALL student enrollments? This action cannot be undone!")) {
+                clearAllCourses();
             }
         }
     };
