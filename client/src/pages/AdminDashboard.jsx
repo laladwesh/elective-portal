@@ -620,132 +620,132 @@ function AdminDashboard({ user, onLogout }) {
     );
 
   return (
-    <div className="min-h-screen bg-[#F0F0F0] p-0 font-mono">
-      <div className="max-w-7xl mx-auto p-8">
-        <div className="flex justify-between items-center mb-8 bg-white p-6 border-8 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-          <h1 className="text-4xl font-black text-black uppercase tracking-tighter flex items-center">
-            <AcademicCapIcon className="w-10 h-10 mr-4 text-black" />
-            ADMIN DASHBOARD
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
+          <h1 className="text-3xl font-extrabold text-gray-900 flex items-center">
+            <AcademicCapIcon className="w-8 h-8 mr-3 text-indigo-600" />
+            Admin Dashboard
           </h1>
-          <div className="flex items-center space-x-6">
-            <p className="text-sm font-bold text-black uppercase tracking-tight">
-              WELCOME,{" "}
-              <span className="font-black">
+          <div className="flex items-center space-x-4">
+            <p className="text-lg text-gray-700">
+              Welcome,{" "}
+              <span className="font-semibold text-indigo-700">
                 {user?.name}
               </span>{" "}
               ({user?.role})
             </p>
             <button
               onClick={onLogout}
-              className="flex items-center px-6 py-3 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFFF00] hover:text-black active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-100"
+              className="flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg shadow-md hover:bg-red-700 transition duration-300 ease-in-out"
             >
               <ArrowRightOnRectangleIcon className="w-5 h-5 mr-2" />
-              LOGOUT
+              Logout
             </button>
           </div>
         </div>
 
-        <div className="bg-black p-0 gap-0 grid grid-cols-1 lg:grid-cols-3 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Create Batch Courses Form */}
-          <div className="lg:col-span-2 bg-white p-8 border-8 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] cursor-crosshair hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] transition-all">
-            <h2 className="text-3xl font-black text-black uppercase tracking-tighter mb-6 flex items-center border-b-4 border-black pb-4">
-              <BuildingOffice2Icon className="w-8 h-8 mr-4 text-black" />
-              CREATE BATCH COURSES
+          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg border self-start border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+              <BuildingOffice2Icon className="w-6 h-6 mr-3 text-indigo-600" />
+              Create Courses for a Batch
             </h2>
-            <form onSubmit={handleCreateBatchCourses} className="space-y-6">
-              <div className="bg-black p-0 gap-0 grid grid-cols-1 md:grid-cols-2">
-                <div className="bg-white p-4 border-4 border-black">
+            <form onSubmit={handleCreateBatchCourses} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <label
                     htmlFor="batch"
-                    className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                    className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    BATCH YEAR
+                    Batch Year
                   </label>
                   <input
                     type="text"
                     name="batch"
                     id="batch"
-                    placeholder="2020"
-                    className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold focus:outline-none focus:border-[#3B82F6] transition-all"
+                    placeholder="e.g., 2020"
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
                     value={newBatchCourseData.batch}
                     onChange={handleBatchCourseChange}
                     required
                   />
                 </div>
-                <div className="bg-white p-4 border-4 border-black">
+                <div>
                   <label
                     htmlFor="enrollmentTime"
-                    className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                    className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    ENROLLMENT OPEN TIME (IST)
+                    Enrollment Open Time (IST)
                   </label>
                   <input
                     type="datetime-local"
                     name="enrollmentTime"
                     id="enrollmentTime"
-                    className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold focus:outline-none focus:border-[#3B82F6] transition-all"
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
                     value={newBatchCourseData.enrollmentTime}
                     onChange={handleBatchCourseChange}
                     required
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-4 bg-white p-4 border-4 border-black">
+              <div className="flex items-center gap-3 mt-4">
                 <input
                   type="checkbox"
                   id="isEnrollmentActive"
                   name="isEnrollmentActive"
                   checked={newBatchCourseData.isEnrollmentActive}
                   onChange={handleBatchCourseChange}
-                  className="h-6 w-6 border-4 border-black rounded-none accent-black"
+                  className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                 />
                 <label
                   htmlFor="isEnrollmentActive"
-                  className="text-black text-sm font-black uppercase tracking-tight"
+                  className="text-gray-700 text-base font-medium"
                 >
-                  ACTIVATE ENROLLMENT FOR THIS BATCH
+                  Activate Enrollment for this Batch
                 </label>
               </div>
 
-              <h3 className="text-2xl font-black text-black uppercase tracking-tighter pt-4 pb-2 border-t-4 border-black">
-                INDIVIDUAL COURSES:
+              <h3 className="text-xl font-semibold text-gray-800 pt-4 pb-2">
+                Individual Courses:
               </h3>
               {newBatchCourseData.courses.map((course, index) => (
                 <div
                   key={index}
-                  className="bg-black p-0 gap-0 grid grid-cols-1 md:grid-cols-5 items-end"
+                  className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end bg-gray-50 p-4 rounded-md border border-gray-200 shadow-sm"
                 >
-                  <div className="md:col-span-2 bg-white p-4 border-4 border-black">
+                  <div className="md:col-span-2">
                     <label
                       htmlFor={`courseName-${index}`}
-                      className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                      className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      COURSE NAME
+                      Course Name
                     </label>
                     <input
                       type="text"
                       name="courseName"
                       id={`courseName-${index}`}
-                      placeholder="DATA STRUCTURES"
-                      className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold uppercase focus:outline-none focus:border-[#3B82F6]"
+                      placeholder="e.g., Data Structures"
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
                       value={course.courseName}
                       onChange={(e) => handleIndividualCourseChange(index, e)}
                       required
                     />
                   </div>
-                  <div className="md:col-span-2 bg-white p-4 border-4 border-black">
+                  <div className="md:col-span-2">
                     <label
                       htmlFor={`intakeCapacity-${index}`}
-                      className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                      className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      INTAKE CAPACITY
+                      Intake Capacity
                     </label>
                     <input
                       type="number"
                       name="intakeCapacity"
                       id={`intakeCapacity-${index}`}
-                      placeholder="60"
-                      className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold focus:outline-none focus:border-[#3B82F6]"
+                      placeholder="e.g., 60"
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
                       value={course.intakeCapacity}
                       onChange={(e) => handleIndividualCourseChange(index, e)}
                       min="1"
@@ -756,10 +756,10 @@ function AdminDashboard({ user, onLogout }) {
                     <button
                       type="button"
                       onClick={() => handleRemoveIndividualCourseField(index)}
-                      className="flex items-center justify-center px-4 py-3 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFFF00] hover:text-black active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-100 text-xs mt-auto"
+                      className="flex items-center justify-center px-4 py-3 bg-red-500 text-white font-medium rounded-md shadow-sm hover:bg-red-600 transition duration-300 ease-in-out text-sm mt-auto"
                     >
                       <MinusCircleIcon className="w-5 h-5 mr-2" />
-                      REMOVE
+                      Remove
                     </button>
                   )}
                 </div>
@@ -767,89 +767,89 @@ function AdminDashboard({ user, onLogout }) {
               <button
                 type="button"
                 onClick={handleAddIndividualCourseField}
-                className="flex items-center px-6 py-4 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#3B82F6] hover:text-white active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-100"
+                className="flex items-center px-5 py-3 bg-green-600 text-white font-medium rounded-md shadow-md hover:bg-green-700 transition duration-300 ease-in-out"
               >
-                <PlusCircleIcon className="w-6 h-6 mr-2" />
-                ADD ANOTHER COURSE
+                <PlusCircleIcon className="w-5 h-5 mr-2" />
+                Add Another Course
               </button>
 
               <button
                 type="submit"
-                className="w-full flex items-center justify-center px-8 py-5 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFFF00] hover:text-black active:shadow-none active:translate-x-2 active:translate-y-2 transition-all duration-100 mt-6 text-lg"
+                className="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out mt-6"
               >
-                <AcademicCapIcon className="w-8 h-8 mr-3" />
-                CREATE BATCH COURSES
+                <AcademicCapIcon className="w-6 h-6 mr-3" />
+                Create Batch Courses
               </button>
             </form>
           </div>
 
           {/* Add Student Form */}
-          <div className="bg-white p-8 border-8 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] cursor-crosshair hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] transition-all">
-            <h2 className="text-3xl font-black text-black uppercase tracking-tighter mb-6 flex items-center border-b-4 border-black pb-4">
-              <UserPlusIcon className="w-8 h-8 mr-4 text-black" />
-              ADD NEW STUDENT
+          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+              <UserPlusIcon className="w-6 h-6 mr-3 text-purple-600" />
+              Add New Student
             </h2>
-            <form onSubmit={handleAddStudent} className="space-y-5">
+            <form onSubmit={handleAddStudent} className="space-y-4">
               <div>
                 <label
                   htmlFor="studentName"
-                  className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  STUDENT NAME
+                  Student Name
                 </label>
                 <input
                   type="text"
                   id="studentName"
-                  name="name"
-                  placeholder="JOHN DOE"
-                  className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold uppercase focus:outline-none focus:border-[#3B82F6]"
+                  name="name" // Added name attribute
+                  placeholder="e.g., John Doe"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150"
                   value={newStudent.name}
-                  onChange={handleNewStudentChange}
+                  onChange={handleNewStudentChange} // Changed to new handler
                   required
                 />
               </div>
               <div>
                 <label
                   htmlFor="studentEmail"
-                  className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  STUDENT EMAIL
+                  Student Email
                 </label>
                 <input
                   type="email"
                   id="studentEmail"
-                  name="email"
-                  placeholder="JOHN.DOE@EXAMPLE.COM"
-                  className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold focus:outline-none focus:border-[#3B82F6]"
+                  name="email" // Added name attribute
+                  placeholder="e.g., john.doe@example.com"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150"
                   value={newStudent.email}
-                  onChange={handleNewStudentChange}
+                  onChange={handleNewStudentChange} // Changed to new handler
                   required
                 />
               </div>
               <div>
                 <label
                   htmlFor="studentBatch"
-                  className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  BATCH YEAR
+                  Batch Year
                 </label>
                 <input
                   type="text"
                   id="studentBatch"
-                  name="batch"
-                  placeholder="2020"
-                  className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold uppercase focus:outline-none focus:border-[#3B82F6]"
+                  name="batch" // Added name attribute
+                  placeholder="e.g., 2020"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150"
                   value={newStudent.batch}
-                  onChange={handleNewStudentChange}
+                  onChange={handleNewStudentChange} // Changed to new handler
                   required
                 />
               </div>
               <button
                 type="submit"
-                className="w-full flex items-center justify-center px-6 py-4 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFFF00] hover:text-black active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-100"
+                className="w-full flex items-center justify-center px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-lg hover:bg-purple-700 transition duration-300 ease-in-out"
               >
                 <UserPlusIcon className="w-6 h-6 mr-3" />
-                ADD STUDENT
+                Add Student
               </button>
             </form>
             <BulkUploadStudents
@@ -861,13 +861,13 @@ function AdminDashboard({ user, onLogout }) {
         </div>
 
         {/* View All Students Button */}
-        <div className="bg-black p-0 gap-0 flex flex-col sm:flex-row justify-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
           <button
             onClick={openStudentsModal}
-            className="flex items-center px-8 py-4 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#3B82F6] hover:text-white active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-100"
+            className="flex items-center px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-lg hover:bg-teal-700 transition duration-300 ease-in-out"
           >
             <UserGroupIcon className="w-6 h-6 mr-3" />
-            VIEW ALL STUDENTS
+            View All Students
           </button>
           <EnrollmentStatsModal user={user} />
           {/* Render the new ClearSessionButton component */}
@@ -879,31 +879,31 @@ function AdminDashboard({ user, onLogout }) {
         </div>
 
         {/* Courses List (for Admin to see all courses) - Now with Batch Tabs */}
-        <div className="bg-white p-8 border-8 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-8 cursor-crosshair">
-          <h2 className="text-3xl font-black text-black uppercase tracking-tighter mb-6 flex items-center border-b-4 border-black pb-4">
-            <ClipboardDocumentListIcon className="w-8 h-8 mr-4 text-black" />
-            AVAILABLE COURSES
+        <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100 mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+            <ClipboardDocumentListIcon className="w-6 h-6 mr-3 text-emerald-600" />
+            Available Courses
           </h2>
           {courses.length === 0 ? (
-            <p className="text-black font-bold text-center py-8 uppercase tracking-tight">
-              NO COURSES AVAILABLE. START BY CREATING COURSES FOR A BATCH!
+            <p className="text-gray-600 text-center py-4">
+              No courses available. Start by creating courses for a batch!
             </p>
           ) : (
             <div>
               {/* Batch Tabs for Courses */}
-              <div className="border-b-4 border-black mb-6">
-                <nav className="-mb-1 bg-black p-0 gap-0 flex" aria-label="Tabs">
+              <div className="border-b border-gray-200 mb-6">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
                   {sortedCourseBatches.map((batch) => (
                     <button
                       key={batch}
                       onClick={() => setActiveCourseBatchTab(batch)}
                       className={`${
                         activeCourseBatchTab === batch
-                          ? "bg-white text-black border-4 border-black border-b-0"
-                          : "bg-[#F0F0F0] text-black border-4 border-black border-b-0 hover:bg-[#FFFF00]"
-                      } whitespace-nowrap py-4 px-6 font-black text-sm uppercase tracking-tighter transition-all`}
+                          ? "border-indigo-500 text-indigo-600"
+                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150`}
                     >
-                      BATCH {batch} ({coursesByBatch[batch].length})
+                      Batch {batch} ({coursesByBatch[batch].length})
                     </button>
                   ))}
                 </nav>
@@ -912,117 +912,122 @@ function AdminDashboard({ user, onLogout }) {
               {/* Course List for Active Batch */}
               {activeCourseBatchTab && (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full border-4 border-black">
-                    <thead className="bg-black">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
                       <tr>
                         {/* NEW: Checkbox for bulk delete */}
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
                           <input
                             type="checkbox"
-                            className="h-5 w-5 border-4 border-white rounded-none accent-[#FFFF00]"
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                             onChange={handleSelectAllCourses}
                             checked={areAllCoursesInCurrentBatchSelected}
                           />
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          COURSE NAME
+                          Course Name
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          BATCH
+                          Batch
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          INTAKE
+                          Intake
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          ENROLLED
+                          Enrolled
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          OPEN TIME (IST)
+                          Open Time (IST)
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          ACTIVE
+                          Active
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          ACTIONS
+                          Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white">
+                    <tbody className="bg-white divide-y divide-gray-200">
                       {coursesByBatch[activeCourseBatchTab].map((course) => {
                         const isFull =
                           course.enrolledStudentsCount >= course.intakeCapacity;
                         let statusIcon = course.isEnrollmentActive ? (
-                          <CheckCircleIcon className="w-6 h-6 text-black inline-block align-middle mr-2" />
+                          <CheckCircleIcon className="w-5 h-5 text-green-500 inline-block align-middle mr-1" />
                         ) : (
-                          <XCircleIcon className="w-6 h-6 text-black inline-block align-middle mr-2" />
+                          <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
                         );
                         let statusText = course.isEnrollmentActive
-                          ? "YES"
-                          : "NO";
-                        let statusClass = "text-black font-black";
+                          ? "Yes"
+                          : "No";
+                        let statusClass = course.isEnrollmentActive
+                          ? "text-green-600"
+                          : "text-red-600";
 
                         if (isFull && course.isEnrollmentActive) {
                           statusIcon = (
-                            <XCircleIcon className="w-6 h-6 text-black inline-block align-middle mr-2" />
+                            <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
                           );
-                          statusText = "FULL (INACTIVE)";
+                          statusText = "Full (Inactive)";
+                          statusClass = "text-red-600";
                         } else if (isFull) {
+                          // If it's full but admin manually closed it
                           statusIcon = (
-                            <XCircleIcon className="w-6 h-6 text-black inline-block align-middle mr-2" />
+                            <XCircleIcon className="w-5 h-5 text-red-500 inline-block align-middle mr-1" />
                           );
-                          statusText = "FULL";
+                          statusText = "Full";
+                          statusClass = "text-red-600";
                         }
 
                         return (
-                          <tr key={course._id} className="hover:bg-[#FFFF00] transition-colors border-4 border-black">
+                          <tr key={course._id} className="hover:bg-gray-50">
                             {/* NEW: Checkbox for individual course */}
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-black border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               <input
                                 type="checkbox"
-                                className="h-5 w-5 border-4 border-black rounded-none accent-black"
+                                className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                                 checked={selectedCourseIds.includes(course._id)}
                                 onChange={() =>
                                   handleCourseCheckboxChange(course._id)
                                 }
                               />
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-black uppercase tracking-tight border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {course.courseName}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-black border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {course.batch}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-black border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {course.intakeCapacity}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-black border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {course.enrolledStudentsCount}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-black border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {course.enrollmentOpenTime
                                 ? new Date(
                                     course.enrollmentOpenTime
@@ -1031,15 +1036,15 @@ function AdminDashboard({ user, onLogout }) {
                                     dateStyle: "short",
                                     timeStyle: "short",
                                   })
-                                : "NOT SET"}
+                                : "Not Set"}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
                               {statusIcon}
-                              <span className={`${statusClass} uppercase tracking-tight`}>
+                              <span className={`${statusClass} font-semibold`}>
                                 {statusText}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-black bg-black p-0 gap-0 flex space-x-0 border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex space-x-2">
                               <button
                                 onClick={() =>
                                   openEnrollmentModal(
@@ -1047,18 +1052,18 @@ function AdminDashboard({ user, onLogout }) {
                                     course.courseName
                                   )
                                 }
-                                className="flex-1 items-center justify-center px-3 py-3 text-white bg-black border-4 border-black hover:bg-[#3B82F6] font-black text-xs uppercase tracking-tighter transition-all"
+                                className="flex items-center justify-center px-3 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 font-medium text-xs transition duration-150 shadow-sm"
                               >
-                                <EyeIcon className="w-4 h-4 mr-1 inline" />
-                                VIEW
+                                <EyeIcon className="w-4 h-4 mr-1" />
+                                View Enrolled
                               </button>
                               {/* NEW: Edit Course Button */}
                               <button
                                 onClick={() => openEditCourseModal(course)}
-                                className="flex-1 items-center justify-center px-3 py-3 text-white bg-black border-4 border-black hover:bg-[#FFFF00] hover:text-black font-black text-xs uppercase tracking-tighter transition-all"
+                                className="flex items-center justify-center px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium text-xs transition duration-150 shadow-sm"
                               >
-                                <PencilSquareIcon className="w-4 h-4 mr-1 inline" />
-                                EDIT
+                                <PencilSquareIcon className="w-4 h-4 mr-1" />
+                                Edit
                               </button>
                             </td>
                           </tr>
@@ -1068,13 +1073,13 @@ function AdminDashboard({ user, onLogout }) {
                   </table>
                   {/* NEW: Delete Selected Courses Button */}
                   {selectedCourseIds.length > 0 && (
-                    <div className="mt-6 flex justify-end">
+                    <div className="mt-4 flex justify-end">
                       <button
                         onClick={handleDeleteSelectedCourses}
-                        className="flex items-center px-6 py-4 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFFF00] hover:text-black active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-100"
+                        className="flex items-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 ease-in-out"
                       >
-                        <TrashIcon className="w-6 h-6 mr-2" />
-                        DELETE SELECTED ({selectedCourseIds.length})
+                        <TrashIcon className="w-5 h-5 mr-2" />
+                        Delete Selected ({selectedCourseIds.length})
                       </button>
                     </div>
                   )}
@@ -1088,78 +1093,80 @@ function AdminDashboard({ user, onLogout }) {
         <Modal
           isOpen={isEnrollmentModalOpen}
           onClose={closeEnrollmentModal}
-          title={`ENROLLMENTS FOR ${selectedCourseName}`}
+          title={`Enrollments for ${selectedCourseName}`}
         >
           {isLoadingEnrollments ? (
-            <div className="text-center py-12 text-black font-black uppercase tracking-tight text-xl">
-              LOADING ENROLLMENTS...
+            <div className="text-center py-8 text-indigo-600">
+              Loading enrollments...
             </div>
           ) : courseEnrollments.length === 0 ? (
-            <p className="text-black font-bold text-center py-8 uppercase tracking-tight">
-              NO STUDENTS ENROLLED IN THIS COURSE YET.
+            <p className="text-gray-600 text-center py-4">
+              No students enrolled in this course yet.
             </p>
           ) : (
             <div className="overflow-x-auto max-h-96">
-              <table className="min-w-full border-4 border-black">
-                <thead className="bg-black">
+              {" "}
+              {/* Added max-h for scroll */}
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
                     <th
                       scope="col"
-                      className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      STUDENT NAME
+                      Student Name
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      STUDENT EMAIL
+                      Student Email
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      BATCH
+                      Batch
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      ENROLLMENT DATE (IST)
+                      Enrollment Date (IST)
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white">
+                <tbody className="bg-white divide-y divide-gray-200">
                   {courseEnrollments.map((enrollment) => (
-                    <tr key={enrollment._id} className="hover:bg-[#FFFF00] transition-colors border-4 border-black">
+                    <tr key={enrollment._id} className="hover:bg-gray-50">
                       {/* Student Name */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-black uppercase border-4 border-black">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <div className="flex items-center">
-                          <IdentificationIcon className="w-5 h-5 mr-2 text-black" />
+                          <IdentificationIcon className="w-4 h-4 mr-2 text-gray-500" />
                           <span>{enrollment.student.name}</span>
                         </div>
                       </td>
 
                       {/* Student Email */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-black border-4 border-black">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center">
-                          <EnvelopeIcon className="w-5 h-5 mr-2 text-black" />
+                          <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-500" />
                           <span>{enrollment.student.email}</span>
                         </div>
                       </td>
 
                       {/* Batch */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-black border-4 border-black">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center">
-                          <TagIcon className="w-5 h-5 mr-1 text-black" />
+                          <TagIcon className="w-4 h-4 mr-1 text-gray-400" />
                           <span>{enrollment.student.batch}</span>
                         </div>
                       </td>
 
                       {/* Enrollment Date (IST) */}
-                      <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-black border-4 border-black">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center">
-                          <CalendarIcon className="w-5 h-5 mr-2 text-black" />
+                          <CalendarIcon className="w-4 h-4 mr-2 text-gray-500" />
                           <span>
                             {new Date(enrollment.enrollmentDate).toLocaleString(
                               "en-IN",
@@ -1184,33 +1191,33 @@ function AdminDashboard({ user, onLogout }) {
         <Modal
           isOpen={isStudentsModalOpen}
           onClose={closeStudentsModal}
-          title="ALL STUDENTS BY BATCH"
+          title="All Students by Batch"
         >
           {isLoadingStudents ? (
-            <div className="text-center py-12 text-black font-black uppercase tracking-tight text-xl">
-              LOADING STUDENTS...
+            <div className="text-center py-8 text-teal-600">
+              Loading students...
             </div>
           ) : sortedBatches.length === 0 ? (
-            <p className="text-black font-bold text-center py-8 uppercase tracking-tight">NO STUDENTS FOUND.</p>
+            <p className="text-gray-600 text-center py-4">No students found.</p>
           ) : (
             <div>
               {/* Batch Tabs */}
-              <div className="border-b-4 border-black">
-                <nav className="-mb-1 bg-black p-0 gap-0 flex" aria-label="Tabs">
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
                   {sortedBatches.map((batch) => (
                     <button
                       key={batch}
                       onClick={() => {
                         setActiveStudentBatchTab(batch);
-                        setSelectedStudentIds([]);
+                        setSelectedStudentIds([]); // Clear selections when changing tabs
                       }}
                       className={`${
                         activeStudentBatchTab === batch
-                          ? "bg-white text-black border-4 border-black border-b-0"
-                          : "bg-[#F0F0F0] text-black border-4 border-black border-b-0 hover:bg-[#FFFF00]"
-                      } whitespace-nowrap py-4 px-6 font-black text-sm uppercase tracking-tighter transition-all`}
+                          ? "border-indigo-500 text-indigo-600"
+                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                      } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150`}
                     >
-                      BATCH {batch} ({studentsByBatch[batch].length})
+                      Batch {batch} ({studentsByBatch[batch].length})
                     </button>
                   ))}
                 </nav>
@@ -1219,66 +1226,68 @@ function AdminDashboard({ user, onLogout }) {
               {/* Student List for Active Tab */}
               {activeStudentBatchTab && (
                 <div className="mt-6 overflow-x-auto max-h-96">
-                  <div className="flex justify-end p-4 bg-black">
+                  {" "}
+                  {/* Added max-h for scroll */}
+                  <div className="flex justify-end p-2 bg-gray-50">
                     <button
                       onClick={() =>
                         handleDeleteStudentConfirmation(null, "bulk")
                       }
                       disabled={selectedStudentIds.length === 0}
-                      className={`inline-flex items-center px-6 py-3 border-4 border-black text-sm font-black uppercase tracking-tighter rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-white ${
+                      className={`inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
                         selectedStudentIds.length > 0
-                          ? "bg-black hover:bg-[#FFFF00] hover:text-black cursor-pointer active:shadow-none active:translate-x-1 active:translate-y-1"
-                          : "bg-[#888888] cursor-not-allowed"
-                      } transition-all duration-100`}
+                          ? "bg-red-600 hover:bg-red-700 cursor-pointer"
+                          : "bg-gray-400 cursor-not-allowed"
+                      } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out`}
                     >
-                      <TrashIcon className="w-5 h-5 mr-2" />
-                      DELETE SELECTED ({selectedStudentIds.length})
+                      <TrashIcon className="w-4 h-4 mr-1" />
+                      Delete Selected ({selectedStudentIds.length})
                     </button>
                   </div>
-                  <table className="min-w-full border-4 border-black">
-                    <thead className="bg-black">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
                       <tr>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
                           <input
                             type="checkbox"
-                            className="h-5 w-5 border-4 border-white rounded-none accent-[#FFFF00]"
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                             checked={areAllStudentsInCurrentBatchSelected}
                             onChange={handleSelectAllStudents}
                           />
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          NAME
+                          Name
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          EMAIL
+                          Email
                         </th>
                         <th
                           scope="col"
-                          className="px-6 py-4 text-right text-xs font-black text-white uppercase tracking-tighter border-4 border-black"
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          ACTIONS
+                          Actions
                         </th>
                       </tr>
                     </thead>
 
-                    <tbody className="bg-white">
+                    <tbody className="bg-white divide-y divide-gray-200">
                       {studentsByBatch[activeStudentBatchTab]?.map(
                         (student) => (
-                          <tr key={student._id} className="hover:bg-[#FFFF00] transition-colors border-4 border-black">
+                          <tr key={student._id} className="hover:bg-gray-50">
                             {/* NEW: Checkbox for individual student */}
-                            <td className="px-6 py-4 whitespace-nowrap border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap">
                               <input
                                 type="checkbox"
-                                className="h-5 w-5 border-4 border-black rounded-none accent-black"
+                                className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
                                 checked={selectedStudentIds.includes(
                                   student._id
                                 )}
@@ -1288,21 +1297,21 @@ function AdminDashboard({ user, onLogout }) {
                               />
                             </td>
                             {/* Name cell stays a table-cell */}
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-black uppercase border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               <div className="flex items-center">
-                                <IdentificationIcon className="w-5 h-5 mr-2 text-black" />
+                                <IdentificationIcon className="w-4 h-4 mr-2 text-gray-500" />
                                 <span>{student.name}</span>
                               </div>
                             </td>
 
                             {/* Email cell stays a table-cell */}
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-black border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <div className="flex items-center">
-                                <EnvelopeIcon className="w-5 h-5 mr-2 text-black" />
+                                <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-500" />
                                 <span>{student.email}</span>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-black text-right border-4 border-black">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                               <button
                                 onClick={() =>
                                   handleDeleteStudentConfirmation(
@@ -1310,10 +1319,10 @@ function AdminDashboard({ user, onLogout }) {
                                     "single"
                                   )
                                 }
-                                className="text-black hover:text-white hover:bg-black p-2 border-4 border-black transition-all"
+                                className="text-red-600 hover:text-red-900 ml-3"
                                 title="Delete Student"
                               >
-                                <TrashIcon className="w-6 h-6" />
+                                <TrashIcon className="w-5 h-5" />
                               </button>
                             </td>
                           </tr>
@@ -1331,22 +1340,22 @@ function AdminDashboard({ user, onLogout }) {
         <Modal
           isOpen={isEditCourseModalOpen}
           onClose={closeEditCourseModal}
-          title={`EDIT COURSE: ${editingCourse?.courseName}`}
+          title={`Edit Course: ${editingCourse?.courseName}`}
         >
           {editingCourse && (
-            <form onSubmit={handleUpdateCourse} className="space-y-6 p-6">
+            <form onSubmit={handleUpdateCourse} className="space-y-4 p-4">
               <div>
                 <label
                   htmlFor="editCourseName"
-                  className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  COURSE NAME
+                  Course Name
                 </label>
                 <input
                   type="text"
                   name="courseName"
                   id="editCourseName"
-                  className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold uppercase focus:outline-none focus:border-[#3B82F6]"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
                   value={editFormData.courseName}
                   onChange={handleEditFormChange}
                   required
@@ -1355,15 +1364,15 @@ function AdminDashboard({ user, onLogout }) {
               <div>
                 <label
                   htmlFor="editBatch"
-                  className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  BATCH
+                  Batch
                 </label>
                 <input
                   type="text"
                   name="batch"
                   id="editBatch"
-                  className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold uppercase focus:outline-none focus:border-[#3B82F6]"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
                   value={editFormData.batch}
                   onChange={handleEditFormChange}
                   required
@@ -1372,15 +1381,15 @@ function AdminDashboard({ user, onLogout }) {
               <div>
                 <label
                   htmlFor="editIntakeCapacity"
-                  className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  INTAKE CAPACITY
+                  Intake Capacity
                 </label>
                 <input
                   type="number"
                   name="intakeCapacity"
                   id="editIntakeCapacity"
-                  className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold focus:outline-none focus:border-[#3B82F6]"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
                   value={editFormData.intakeCapacity}
                   onChange={handleEditFormChange}
                   min="1"
@@ -1390,44 +1399,44 @@ function AdminDashboard({ user, onLogout }) {
               <div>
                 <label
                   htmlFor="editEnrollmentOpenTime"
-                  className="block text-xs font-black text-black uppercase tracking-tighter mb-2"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  ENROLLMENT OPEN TIME (IST)
+                  Enrollment Open Time (IST)
                 </label>
                 <input
                   type="datetime-local"
                   name="enrollmentOpenTime"
                   id="editEnrollmentOpenTime"
-                  className="w-full p-3 border-4 border-black rounded-none bg-white text-black font-bold focus:outline-none focus:border-[#3B82F6]"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
                   value={editFormData.enrollmentOpenTime}
                   onChange={handleEditFormChange}
                 />
-                <p className="mt-2 text-xs text-black font-bold uppercase tracking-tight">
-                  LEAVE BLANK TO CLEAR TIME.
+                <p className="mt-1 text-sm text-gray-500">
+                  Leave blank to clear time.
                 </p>
               </div>
-              <div className="flex items-center gap-4 bg-white p-4 border-4 border-black">
+              <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   id="editIsEnrollmentActive"
                   name="isEnrollmentActive"
                   checked={editFormData.isEnrollmentActive}
                   onChange={handleEditFormChange}
-                  className="h-6 w-6 border-4 border-black rounded-none accent-black"
+                  className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label
                   htmlFor="editIsEnrollmentActive"
-                  className="text-black text-sm font-black uppercase tracking-tight"
+                  className="text-gray-700 text-base font-medium"
                 >
-                  ENROLLMENT ACTIVE
+                  Enrollment Active
                 </label>
               </div>
               <button
                 type="submit"
-                className="w-full flex items-center justify-center px-8 py-5 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFFF00] hover:text-black active:shadow-none active:translate-x-2 active:translate-y-2 transition-all duration-100 mt-6 text-lg"
+                className="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out mt-6"
               >
-                <PencilSquareIcon className="w-6 h-6 mr-2" />
-                SAVE CHANGES
+                <PencilSquareIcon className="w-5 h-5 mr-2" />
+                Save Changes
               </button>
             </form>
           )}
@@ -1437,23 +1446,23 @@ function AdminDashboard({ user, onLogout }) {
         <Modal
           isOpen={isDeleteConfirmationModalOpen}
           onClose={handleCancelDeleteStudent}
-          title="CONFIRM DELETION"
+          title="Confirm Deletion"
         >
-          <p className="text-black text-base font-bold uppercase tracking-tight mb-8 p-4 border-4 border-black bg-[#FFFF00]">
+          <p className="text-gray-700 text-lg mb-6">
             {getDeleteStudentConfirmationMessage()}
           </p>
-          <div className="bg-black p-0 gap-0 flex justify-end">
+          <div className="flex justify-end space-x-3">
             <button
               onClick={handleCancelDeleteStudent}
-              className="px-6 py-3 border-4 border-black bg-white text-black font-black uppercase tracking-tighter rounded-none hover:bg-[#F0F0F0] transition-all"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
-              CANCEL
+              Cancel
             </button>
             <button
               onClick={handleConfirmDeleteStudent}
-              className="px-6 py-3 bg-black text-white font-black uppercase tracking-tighter border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-[#FFFF00] hover:text-black active:shadow-none active:translate-x-1 active:translate-y-1 transition-all duration-100"
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
-              CONFIRM DELETE
+              Confirm Delete
             </button>
           </div>
         </Modal>
