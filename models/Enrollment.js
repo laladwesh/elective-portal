@@ -20,4 +20,10 @@ const enrollmentSchema = new mongoose.Schema({
 // Ensure a student can enroll in a course only once
 enrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
 
+// Index for efficient course-based queries (used in delete operations and count updates)
+enrollmentSchema.index({ course: 1 });
+
+// Index for efficient student-based queries  
+enrollmentSchema.index({ student: 1 });
+
 module.exports = mongoose.model('Enrollment', enrollmentSchema);
