@@ -30,7 +30,7 @@ function AuthSuccess({ setUser }) {
         role: decodeURIComponent(role),
         batch: batch ? decodeURIComponent(batch) : '', // Batch might be empty for new users or admins
       };
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('elective-user', JSON.stringify(userData));
       setUser(userData);
       toast.success('Login successful!');
 
