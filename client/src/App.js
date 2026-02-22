@@ -16,20 +16,20 @@ function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('elective-user');
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
       } catch (e) {
         console.error("Failed to parse user from localStorage:", e);
-        localStorage.removeItem('user');
+        localStorage.removeItem('elective-user');
       }
     }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    localStorage.removeItem('elective-user');
     setUser(null);
   };
 
