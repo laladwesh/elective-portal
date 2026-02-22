@@ -8,7 +8,7 @@ function Auth({ setUser }) {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('elective-user');
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -19,7 +19,7 @@ function Auth({ setUser }) {
         }
       } catch (e) {
         console.error("Failed to parse user from localStorage on Auth page:", e);
-        localStorage.removeItem('user');
+        localStorage.removeItem('elective-user');
       }
     }
   }, [navigate]);
