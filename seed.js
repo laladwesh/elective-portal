@@ -18,8 +18,8 @@ const connectDB = async () => {
 const seedAdmin = async () => {
   await connectDB(); // Connect to the database
 
-  const adminEmail = "laladwesh@gmail.com";
-  const adminName = "Laladwesh Admin"; // You can change the name
+  const adminEmail = "deanacademics@prasad.edu.in";
+  const adminName = "Dean Academics PIMS"; // You can change the name
 
   try {
     // Check if the admin user already exists
