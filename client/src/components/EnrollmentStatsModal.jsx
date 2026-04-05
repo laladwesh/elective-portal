@@ -247,7 +247,7 @@ function EnrollmentStatsModal({ user }) {
     const ws = XLSX.utils.json_to_sheet(unenrolledStudentsData.map(s => ({
       Name: s.name,
       Email: s.email,
-      Batch: s.batch
+      Batch: s.batch,
     })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Unenrolled Students");
