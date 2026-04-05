@@ -116,6 +116,13 @@ export const courseAPI = {
    * @param {object} config - Axios config with auth headers
    */
   closeBatchEnrollment: (batch, config) => axios.put(`${API_BASE_PATH}/courses/close-batch-enrollment`, { batch }, config),
+
+  /**
+    * Set enrollment settings for all courses in a batch block
+    * @param {object} data - { batch, block, enrollmentOpenTime, isEnrollmentActive }
+   * @param {object} config - Axios config with auth headers
+   */
+  setBatchEnrollment: (data, config) => axios.put(`${API_BASE_PATH}/courses/set-batch-enrollment`, data, config),
 };
 
 // ========================================
