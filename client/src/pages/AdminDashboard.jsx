@@ -1,5 +1,4 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { courseAPI, studentAPI } from '../services/apiService';
@@ -17,6 +16,8 @@ import {
   MinusIcon,
   UserGroupIcon,
   AcademicCapIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
   EyeIcon,
   ArrowRightOnRectangleIcon,
   CheckCircleIcon,
@@ -31,14 +32,17 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 
+const BLOCK_OPTIONS = ["Block 1", "Block 2"];
+
 function AdminDashboard({ user, onLogout }) {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [newBatchCourseData, setNewBatchCourseData] = useState({
     batch: "",
+    block: "",
     enrollmentTime: "",
     isEnrollmentActive: false,
-    courses: [{ courseName: "", intakeCapacity: "" }],
+    courses: [{ courseName: "", department: "", professorName: "", intakeCapacity: "" }],
   });
 
   // State for Course Enrollments Modal
@@ -60,7 +64,15 @@ function AdminDashboard({ user, onLogout }) {
   const [editFormData, setEditFormData] = useState({
     courseName: "",
     batch: "",
+    block: "",
+    department: "",
+    professorName: "",
     intakeCapacity: "",
+  });
+  const [isBatchEnrollmentModalOpen, setIsBatchEnrollmentModalOpen] = useState(false);
+  const [batchEnrollmentFormData, setBatchEnrollmentFormData] = useState({
+    batch: "",
+    block: "",
     enrollmentOpenTime: "",
     isEnrollmentActive: false,
   });
@@ -68,6 +80,8 @@ function AdminDashboard({ user, onLogout }) {
   // State for Course Batch Tabs
   const [activeCourseBatchTab, setActiveCourseBatchTab] = useState("");
   const [selectedCourseIds, setSelectedCourseIds] = useState([]);
+  const [courseSearchQuery, setCourseSearchQuery] = useState("");
+  const [courseStatusFilter, setCourseStatusFilter] = useState("all");
 
   // STATES FOR STUDENT DELETION
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
@@ -137,12 +151,57 @@ function AdminDashboard({ user, onLogout }) {
     fetchCourses();
   }, [fetchCourses]);
 
+  const formatDateForISTInput = (dateValue) => {
+    if (!dateValue) return "";
+
+    const dateObj = new Date(dateValue);
+    if (dateObj.toString() === "Invalid Date") return "";
+
+    const options = {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+      timeZone: "Asia/Kolkata",
+    };
+
+    const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(dateObj);
+    const year = parts.find((p) => p.type === "year")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const day = parts.find((p) => p.type === "day")?.value;
+    const hour = parts.find((p) => p.type === "hour")?.value;
+    const minute = parts.find((p) => p.type === "minute")?.value;
+
+    if (!year || !month || !day || !hour || !minute) return "";
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+  };
+
+  const formatDateTimeForApi = (dateTimeLocalValue) => {
+    if (!dateTimeLocalValue) return null;
+
+    let normalizedValue = dateTimeLocalValue;
+    if (!normalizedValue.match(/:[0-5]\d([+-]\d{2}:\d{2}|Z)$/)) normalizedValue += ":00";
+    if (!normalizedValue.match(/[+-]\d{2}:\d{2}$/)) normalizedValue += "+05:30";
+
+    return normalizedValue;
+  };
+
   const handleBatchCourseChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setNewBatchCourseData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    setNewBatchCourseData((prev) => {
+      const next = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      };
+
+      if (name === "isEnrollmentActive" && checked) {
+        next.enrollmentTime = "";
+      }
+
+      return next;
+    });
   };
 
   const handleIndividualCourseChange = (index, e) => {
@@ -156,7 +215,7 @@ function AdminDashboard({ user, onLogout }) {
   const handleAddIndividualCourseField = () => {
     setNewBatchCourseData((prev) => ({
       ...prev,
-      courses: [...prev.courses, { courseName: "", intakeCapacity: "" }],
+      courses: [...prev.courses, { courseName: "", department: "", professorName: "", intakeCapacity: "" }],
     }));
   };
 
@@ -171,10 +230,15 @@ function AdminDashboard({ user, onLogout }) {
 
   const handleCreateBatchCourses = async (e) => {
     e.preventDefault();
-    const { batch, enrollmentTime, isEnrollmentActive, courses: individualCourses } = newBatchCourseData;
+    const { batch, block, enrollmentTime, isEnrollmentActive, courses: individualCourses } = newBatchCourseData;
 
-    if (!batch || individualCourses.length === 0) {
-      toast.error("Please fill batch details and add at least one course.");
+    if (!batch || !block || individualCourses.length === 0) {
+      toast.error("Please fill batch, block, and add at least one course.");
+      return;
+    }
+
+    if (!BLOCK_OPTIONS.includes(block)) {
+      toast.error("Please select a valid block (Block 1 or Block 2).");
       return;
     }
 
@@ -184,32 +248,33 @@ function AdminDashboard({ user, onLogout }) {
     }
 
     for (const course of individualCourses) {
-      if (!course.courseName || !course.intakeCapacity || course.intakeCapacity <= 0) {
-        toast.error("All courses must have a name and a positive intake capacity.");
+      if (!course.courseName || !course.department || !course.professorName || !course.intakeCapacity || course.intakeCapacity <= 0) {
+        toast.error("All courses must have a name, department, professor name, and a positive intake capacity.");
         return;
       }
     }
 
-    let timeToSend = enrollmentTime;
-    if (timeToSend) {
-      if (!timeToSend.match(/:[0-5]\d([+-]\d{2}:\d{2}|Z)$/)) timeToSend += ":00"; 
-      if (!timeToSend.match(/[+-]\d{2}:\d{2}$/)) timeToSend += "+05:30"; 
-    }
+    const timeToSend = formatDateTimeForApi(enrollmentTime);
     
     try {
       toast.loading("Creating courses...", { id: "createCourseToast" });
       await courseAPI.createBatchCourses(
         {
           batch,
+          block,
           enrollmentOpenTime: timeToSend || null,
           isEnrollmentActive,
           courses: individualCourses,
         },
         config()
       );
-      toast.success(`Courses for batch ${batch} created successfully!`, { id: "createCourseToast" });
+      toast.success(`Courses for batch ${batch}, ${block} created successfully!`, { id: "createCourseToast" });
       setNewBatchCourseData({
-        batch: "", enrollmentTime: "", isEnrollmentActive: false, courses: [{ courseName: "", intakeCapacity: "" }],
+        batch: "",
+        block: "",
+        enrollmentTime: "",
+        isEnrollmentActive: false,
+        courses: [{ courseName: "", department: "", professorName: "", intakeCapacity: "" }],
       });
       fetchCourses();
     } catch (error) {
@@ -260,27 +325,14 @@ function AdminDashboard({ user, onLogout }) {
 
   const openEditCourseModal = (course) => {
     setEditingCourse(course);
-    let formattedTime = "";
-    if (course.enrollmentOpenTime) {
-      const dateObj = new Date(course.enrollmentOpenTime); 
-      if (dateObj.toString() !== "Invalid Date") {
-        const options = { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Asia/Kolkata" };
-        const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(dateObj); 
-        const year = parts.find((p) => p.type === "year").value;
-        const month = parts.find((p) => p.type === "month").value;
-        const day = parts.find((p) => p.type === "day").value;
-        const hour = parts.find((p) => p.type === "hour").value;
-        const minute = parts.find((p) => p.type === "minute").value;
-        formattedTime = `${year}-${month}-${day}T${hour}:${minute}`;
-      }
-    }
 
     setEditFormData({
       courseName: course.courseName,
       batch: course.batch,
+      block: course.block || "",
+      department: course.department || "",
+      professorName: course.professorName || "",
       intakeCapacity: course.intakeCapacity,
-      enrollmentOpenTime: formattedTime,
-      isEnrollmentActive: course.isEnrollmentActive,
     });
     setIsEditCourseModalOpen(true);
   };
@@ -288,7 +340,7 @@ function AdminDashboard({ user, onLogout }) {
   const closeEditCourseModal = () => {
     setIsEditCourseModalOpen(false);
     setEditingCourse(null);
-    setEditFormData({ courseName: "", batch: "", intakeCapacity: "", enrollmentOpenTime: "", isEnrollmentActive: false });
+    setEditFormData({ courseName: "", batch: "", block: "", department: "", professorName: "", intakeCapacity: "" });
   };
 
   const handleEditFormChange = (e) => {
@@ -303,19 +355,20 @@ function AdminDashboard({ user, onLogout }) {
     e.preventDefault();
     if (!editingCourse) return;
 
-    let timeToSend = editFormData.enrollmentOpenTime;
-    if (timeToSend) {
-      if (!timeToSend.match(/:[0-5]\d([+-]\d{2}:\d{2}|Z)$/)) timeToSend += ":00";
-      if (!timeToSend.match(/[+-]\d{2}:\d{2}$/)) timeToSend += "+05:30";
-    } else {
-      timeToSend = null; 
-    }
+    const payload = {
+      courseName: editFormData.courseName,
+      batch: editFormData.batch,
+      block: editFormData.block,
+      department: editFormData.department,
+      professorName: editFormData.professorName,
+      intakeCapacity: editFormData.intakeCapacity,
+    };
 
     try {
       toast.loading("Updating course...", { id: "updateCourseToast" });
       await courseAPI.update(
         editingCourse._id,
-        { ...editFormData, enrollmentOpenTime: timeToSend },
+        payload,
         config()
       );
       toast.success("Course updated successfully!", { id: "updateCourseToast" });
@@ -323,6 +376,138 @@ function AdminDashboard({ user, onLogout }) {
       fetchCourses(); 
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update course", { id: "updateCourseToast" });
+    }
+  };
+
+  const getBatchBlockEnrollmentSnapshot = (batch, block) => {
+    const coursesInBlock = (coursesByBatch[batch] || []).filter((course) => course.block === block);
+
+    if (coursesInBlock.length === 0) {
+      return {
+        hasCourses: false,
+        enrollmentOpenTime: "",
+        isEnrollmentActive: false,
+      };
+    }
+
+    const uniqueOpenTimes = [
+      ...new Set(
+        coursesInBlock.map((course) =>
+          course.enrollmentOpenTime ? new Date(course.enrollmentOpenTime).toISOString() : ""
+        )
+      ),
+    ];
+
+    const allCoursesActive = coursesInBlock.every((course) => course.isEnrollmentActive);
+    const commonOpenTime = uniqueOpenTimes.length === 1 ? uniqueOpenTimes[0] : "";
+
+    return {
+      hasCourses: true,
+      enrollmentOpenTime: formatDateForISTInput(commonOpenTime),
+      isEnrollmentActive: allCoursesActive,
+    };
+  };
+
+  const openBatchEnrollmentModal = (batch) => {
+    if (!batch || !coursesByBatch[batch] || coursesByBatch[batch].length === 0) {
+      toast.error("No courses found for the selected batch.");
+      return;
+    }
+
+    const coursesInBatch = coursesByBatch[batch];
+    const availableBlocks = BLOCK_OPTIONS.filter((block) =>
+      coursesInBatch.some((course) => course.block === block)
+    );
+
+    if (availableBlocks.length === 0) {
+      toast.error("No block-wise courses found for this batch.");
+      return;
+    }
+
+    const initialBlock = availableBlocks[0];
+    const snapshot = getBatchBlockEnrollmentSnapshot(batch, initialBlock);
+
+    setBatchEnrollmentFormData({
+      batch,
+      block: initialBlock,
+      enrollmentOpenTime: snapshot.enrollmentOpenTime,
+      isEnrollmentActive: snapshot.isEnrollmentActive,
+    });
+    setIsBatchEnrollmentModalOpen(true);
+  };
+
+  const closeBatchEnrollmentModal = () => {
+    setIsBatchEnrollmentModalOpen(false);
+    setBatchEnrollmentFormData({
+      batch: "",
+      block: "",
+      enrollmentOpenTime: "",
+      isEnrollmentActive: false,
+    });
+  };
+
+  const handleBatchEnrollmentFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    if (name === "block") {
+      setBatchEnrollmentFormData((prev) => {
+        const snapshot = getBatchBlockEnrollmentSnapshot(prev.batch, value);
+        return {
+          ...prev,
+          block: value,
+          enrollmentOpenTime: snapshot.enrollmentOpenTime,
+          isEnrollmentActive: snapshot.isEnrollmentActive,
+        };
+      });
+      return;
+    }
+
+    setBatchEnrollmentFormData((prev) => {
+      const next = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      };
+
+      if (name === "isEnrollmentActive" && checked) {
+        next.enrollmentOpenTime = "";
+      }
+
+      return next;
+    });
+  };
+
+  const handleUpdateBatchEnrollment = async (e) => {
+    e.preventDefault();
+
+    const { batch, block, enrollmentOpenTime, isEnrollmentActive } = batchEnrollmentFormData;
+    if (!batch || !block) return;
+
+    if (!BLOCK_OPTIONS.includes(block)) {
+      toast.error("Please select a valid block (Block 1 or Block 2).");
+      return;
+    }
+
+    const timeToSend = formatDateTimeForApi(enrollmentOpenTime);
+
+    try {
+      toast.loading("Updating batch enrollment...", { id: "updateBatchEnrollmentToast" });
+      await courseAPI.setBatchEnrollment(
+        {
+          batch,
+          block,
+          enrollmentOpenTime: timeToSend,
+          isEnrollmentActive,
+        },
+        config()
+      );
+
+      toast.success(`Enrollment settings updated for batch ${batch}, ${block}!`, { id: "updateBatchEnrollmentToast" });
+      closeBatchEnrollmentModal();
+      fetchCourses();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update batch enrollment settings.", {
+        id: "updateBatchEnrollmentToast",
+      });
     }
   };
 
@@ -337,7 +522,7 @@ function AdminDashboard({ user, onLogout }) {
   const handleSelectAllCourses = (e) => {
     const isChecked = e.target.checked;
     if (isChecked) {
-      const allIdsInCurrentBatch = coursesByBatch[activeCourseBatchTab].map((course) => course._id);
+      const allIdsInCurrentBatch = filteredCoursesInActiveBatch.map((course) => course._id);
       setSelectedCourseIds(allIdsInCurrentBatch);
     } else {
       setSelectedCourseIds([]);
@@ -468,8 +653,43 @@ function AdminDashboard({ user, onLogout }) {
   }, {});
   const sortedCourseBatches = Object.keys(coursesByBatch).sort();
 
-  const areAllCoursesInCurrentBatchSelected = activeCourseBatchTab && coursesByBatch[activeCourseBatchTab] && coursesByBatch[activeCourseBatchTab].length > 0 && coursesByBatch[activeCourseBatchTab].every((course) => selectedCourseIds.includes(course._id));
+  const totalCoursesCount = courses.length;
+  const activeCoursesCount = courses.filter((course) => course.isEnrollmentActive).length;
+  const fullCoursesCount = courses.filter((course) => course.enrolledStudentsCount >= course.intakeCapacity).length;
+  const totalSeatCapacity = courses.reduce((sum, course) => sum + course.intakeCapacity, 0);
+  const totalFilledSeats = courses.reduce((sum, course) => sum + course.enrolledStudentsCount, 0);
+  const seatFillPercentage = totalSeatCapacity > 0 ? Math.round((totalFilledSeats / totalSeatCapacity) * 100) : 0;
+
+  const coursesInActiveBatch = activeCourseBatchTab ? (coursesByBatch[activeCourseBatchTab] || []) : [];
+  const normalizedCourseSearch = courseSearchQuery.trim().toLowerCase();
+  const filteredCoursesInActiveBatch = coursesInActiveBatch.filter((course) => {
+    const matchesSearch = normalizedCourseSearch.length === 0
+      || course.courseName.toLowerCase().includes(normalizedCourseSearch)
+      || (course.block || '').toLowerCase().includes(normalizedCourseSearch)
+      || (course.department || '').toLowerCase().includes(normalizedCourseSearch)
+      || (course.professorName || '').toLowerCase().includes(normalizedCourseSearch);
+
+    const isFull = course.enrolledStudentsCount >= course.intakeCapacity;
+    const matchesStatus =
+      courseStatusFilter === "all"
+      || (courseStatusFilter === "active" && course.isEnrollmentActive)
+      || (courseStatusFilter === "closed" && !course.isEnrollmentActive)
+      || (courseStatusFilter === "full" && isFull);
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const areAllCoursesInCurrentBatchSelected =
+    filteredCoursesInActiveBatch.length > 0
+    && filteredCoursesInActiveBatch.every((course) => selectedCourseIds.includes(course._id));
   const areAllStudentsInCurrentBatchSelected = activeStudentBatchTab && studentsByBatch[activeStudentBatchTab] && studentsByBatch[activeStudentBatchTab].length > 0 && studentsByBatch[activeStudentBatchTab].every((student) => selectedStudentIds.includes(student._id));
+  const hasCoursesForSelectedBatchBlock = Boolean(
+    batchEnrollmentFormData.batch
+    && batchEnrollmentFormData.block
+    && (coursesByBatch[batchEnrollmentFormData.batch] || []).some(
+      (course) => course.block === batchEnrollmentFormData.block
+    )
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
@@ -534,6 +754,27 @@ function AdminDashboard({ user, onLogout }) {
           </div>
         </div>
 
+        {/* Quick Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total Courses</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{totalCoursesCount}</p>
+          </div>
+          <div className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Enrollment Active</p>
+            <p className="mt-2 text-2xl font-semibold text-emerald-700">{activeCoursesCount}</p>
+          </div>
+          <div className="bg-white border border-orange-200 rounded-xl p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-orange-700">Full Courses</p>
+            <p className="mt-2 text-2xl font-semibold text-orange-700">{fullCoursesCount}</p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Seat Fill</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{seatFillPercentage}%</p>
+            <p className="text-xs text-slate-500 mt-1">{totalFilledSeats} of {totalSeatCapacity} seats</p>
+          </div>
+        </div>
+
         {/* Create Batch Card */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
@@ -546,7 +787,7 @@ function AdminDashboard({ user, onLogout }) {
           <div className="p-6">
             <form onSubmit={handleCreateBatchCourses} className="space-y-6">
               {/* Batch & Timing */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6 border-b border-slate-100">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6 border-b border-slate-100">
                 <div>
                   <label htmlFor="batch" className="block text-sm font-medium text-slate-700 mb-1">Batch Identifier</label>
                   <input
@@ -561,7 +802,23 @@ function AdminDashboard({ user, onLogout }) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="enrollmentTime" className="block text-sm font-medium text-slate-700 mb-1 flex justify-between">
+                  <label htmlFor="block" className="block text-sm font-medium text-slate-700 mb-1">Block</label>
+                  <select
+                    name="block"
+                    id="block"
+                    className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+                    value={newBatchCourseData.block}
+                    onChange={handleBatchCourseChange}
+                    required
+                  >
+                    <option value="">Select Block</option>
+                    {BLOCK_OPTIONS.map((blockOption) => (
+                      <option key={blockOption} value={blockOption}>{blockOption}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="enrollmentTime" className="flex justify-between text-sm font-medium text-slate-700 mb-1">
                     <span>Enrollment Open Time (IST)</span>
                     <span className="text-xs text-slate-400 font-normal">Optional</span>
                   </label>
@@ -600,44 +857,74 @@ function AdminDashboard({ user, onLogout }) {
                 </div>
                 <div className="space-y-3">
                   {newBatchCourseData.courses.map((course, index) => (
-                    <div key={index} className="flex flex-col sm:flex-row gap-4 items-start sm:items-end bg-slate-50 p-4 rounded-lg border border-slate-200">
-                      <div className="flex-1 w-full">
-                        <label htmlFor={`courseName-${index}`} className="block text-xs font-medium text-slate-500 mb-1">Course Name</label>
-                        <input
-                          type="text"
-                          name="courseName"
-                          id={`courseName-${index}`}
-                          placeholder="e.g., Advanced Mathematics"
-                          className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
-                          value={course.courseName}
-                          onChange={(e) => handleIndividualCourseChange(index, e)}
-                          required
-                        />
+                    <div key={index} className="flex flex-col gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="w-full">
+                          <label htmlFor={`courseName-${index}`} className="block text-xs font-medium text-slate-500 mb-1">Course Name</label>
+                          <input
+                            type="text"
+                            name="courseName"
+                            id={`courseName-${index}`}
+                            placeholder="e.g., Advanced Mathematics"
+                            className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+                            value={course.courseName}
+                            onChange={(e) => handleIndividualCourseChange(index, e)}
+                            required
+                          />
+                        </div>
+                        <div className="w-full">
+                          <label htmlFor={`department-${index}`} className="block text-xs font-medium text-slate-500 mb-1">Department</label>
+                          <input
+                            type="text"
+                            name="department"
+                            id={`department-${index}`}
+                            placeholder="e.g., ECE"
+                            className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+                            value={course.department}
+                            onChange={(e) => handleIndividualCourseChange(index, e)}
+                            required
+                          />
+                        </div>
                       </div>
-                      <div className="w-full sm:w-48">
-                        <label htmlFor={`intakeCapacity-${index}`} className="block text-xs font-medium text-slate-500 mb-1">Intake Capacity</label>
-                        <input
-                          type="number"
-                          name="intakeCapacity"
-                          id={`intakeCapacity-${index}`}
-                          placeholder="0"
-                          className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
-                          value={course.intakeCapacity}
-                          onChange={(e) => handleIndividualCourseChange(index, e)}
-                          min="1"
-                          required
-                        />
+                      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                        <div className="flex-1 w-full">
+                          <label htmlFor={`professorName-${index}`} className="block text-xs font-medium text-slate-500 mb-1">Professor Name</label>
+                          <input
+                            type="text"
+                            name="professorName"
+                            id={`professorName-${index}`}
+                            placeholder="e.g., Dr. Sharma"
+                            className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+                            value={course.professorName}
+                            onChange={(e) => handleIndividualCourseChange(index, e)}
+                            required
+                          />
+                        </div>
+                        <div className="w-full sm:w-48">
+                          <label htmlFor={`intakeCapacity-${index}`} className="block text-xs font-medium text-slate-500 mb-1">Intake Capacity</label>
+                          <input
+                            type="number"
+                            name="intakeCapacity"
+                            id={`intakeCapacity-${index}`}
+                            placeholder="0"
+                            className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+                            value={course.intakeCapacity}
+                            onChange={(e) => handleIndividualCourseChange(index, e)}
+                            min="1"
+                            required
+                          />
+                        </div>
+                        {newBatchCourseData.courses.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveIndividualCourseField(index)}
+                            className="mt-2 sm:mt-0 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors border border-transparent sm:border-slate-200 sm:bg-white"
+                            title="Remove Course"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
-                      {newBatchCourseData.courses.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveIndividualCourseField(index)}
-                          className="mt-2 sm:mt-0 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors border border-transparent sm:border-slate-200 sm:bg-white"
-                          title="Remove Course"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -723,6 +1010,49 @@ function AdminDashboard({ user, onLogout }) {
                 </nav>
               </div>
 
+              {/* Search & Filter Toolbar */}
+              {activeCourseBatchTab && (
+                <div className="px-6 py-4 border-b border-slate-200 bg-white">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div className="relative w-full lg:max-w-md">
+                      <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={courseSearchQuery}
+                        onChange={(e) => {
+                          setCourseSearchQuery(e.target.value);
+                          setSelectedCourseIds([]);
+                        }}
+                        placeholder="Search courses in this batch"
+                        className="w-full pl-10 pr-3 py-2 rounded-md border border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <FunnelIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <select
+                          value={courseStatusFilter}
+                          onChange={(e) => {
+                            setCourseStatusFilter(e.target.value);
+                            setSelectedCourseIds([]);
+                          }}
+                          className="pl-9 pr-8 py-2 rounded-md border border-slate-300 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500"
+                        >
+                          <option value="all">All Statuses</option>
+                          <option value="active">Active</option>
+                          <option value="closed">Closed</option>
+                          <option value="full">Full</option>
+                        </select>
+                      </div>
+                      <p className="text-xs text-slate-500 whitespace-nowrap">
+                        Showing {filteredCoursesInActiveBatch.length} of {coursesInActiveBatch.length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Data Table */}
               {activeCourseBatchTab && (
                 <div className="overflow-x-auto">
@@ -738,7 +1068,10 @@ function AdminDashboard({ user, onLogout }) {
                           />
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Course Name</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Department</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Professor</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Batch</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Block</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Capacity</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Enrolled</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Open Time (IST)</th>
@@ -747,68 +1080,86 @@ function AdminDashboard({ user, onLogout }) {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-slate-200">
-                      {coursesByBatch[activeCourseBatchTab].map((course) => {
-                        const isFull = course.enrolledStudentsCount >= course.intakeCapacity;
-                        let statusColor = course.isEnrollmentActive ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-800";
-                        let statusText = course.isEnrollmentActive ? "Active" : "Closed";
-                        let dotColor = course.isEnrollmentActive ? "bg-green-500" : "bg-slate-400";
+                      {filteredCoursesInActiveBatch.length > 0 ? (
+                        filteredCoursesInActiveBatch.map((course) => {
+                          const isFull = course.enrolledStudentsCount >= course.intakeCapacity;
+                          let statusColor = course.isEnrollmentActive ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-800";
+                          let statusText = course.isEnrollmentActive ? "Active" : "Closed";
+                          let dotColor = course.isEnrollmentActive ? "bg-green-500" : "bg-slate-400";
 
-                        if (isFull) {
-                          statusColor = "bg-orange-100 text-orange-800";
-                          statusText = course.isEnrollmentActive ? "Full (Closed)" : "Full";
-                          dotColor = "bg-orange-500";
-                        }
+                          if (isFull) {
+                            statusColor = "bg-orange-100 text-orange-800";
+                            statusText = course.isEnrollmentActive ? "Full (Closed)" : "Full";
+                            dotColor = "bg-orange-500";
+                          }
 
-                        return (
-                          <tr key={course._id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                checked={selectedCourseIds.includes(course._id)}
-                                onChange={() => handleCourseCheckboxChange(course._id)}
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{course.courseName}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{course.batch}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{course.intakeCapacity}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{course.enrolledStudentsCount}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                              {course.enrollmentOpenTime
-                                ? new Date(course.enrollmentOpenTime).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })
-                                : "—"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
-                                <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${dotColor}`}></span>
-                                {statusText}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  onClick={() => openEnrollmentModal(course._id, course.courseName)}
-                                  className="text-slate-400 hover:text-indigo-600 transition-colors p-1"
-                                  title="View Roster"
-                                >
-                                  <EyeIcon className="w-5 h-5" />
-                                </button>
-                                <button
-                                  onClick={() => openEditCourseModal(course)}
-                                  className="text-slate-400 hover:text-indigo-600 transition-colors p-1"
-                                  title="Edit Settings"
-                                >
-                                  <PencilSquareIcon className="w-5 h-5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                          return (
+                            <tr key={course._id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                  checked={selectedCourseIds.includes(course._id)}
+                                  onChange={() => handleCourseCheckboxChange(course._id)}
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{course.courseName}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{course.department || '—'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{course.professorName || '—'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{course.batch}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{course.block || '—'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{course.intakeCapacity}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">{course.enrolledStudentsCount}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                {course.enrollmentOpenTime
+                                  ? new Date(course.enrollmentOpenTime).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })
+                                  : "—"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
+                                  <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${dotColor}`}></span>
+                                  {statusText}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex justify-end gap-2">
+                                  <button
+                                    onClick={() => openEnrollmentModal(course._id, course.courseName)}
+                                    className="text-slate-400 hover:text-indigo-600 transition-colors p-1"
+                                    title="View Roster"
+                                  >
+                                    <EyeIcon className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={() => openEditCourseModal(course)}
+                                    className="text-slate-400 hover:text-indigo-600 transition-colors p-1"
+                                    title="Edit Settings"
+                                  >
+                                    <PencilSquareIcon className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="11" className="px-6 py-10 text-center text-sm text-slate-500">
+                            No courses match your current search/filter for this batch.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                   {/* Table Footer Actions */}
-                  <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+                  <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:justify-end gap-3">
+                    <button
+                      onClick={() => openBatchEnrollmentModal(activeCourseBatchTab)}
+                      className="inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      <PencilSquareIcon className="w-4 h-4 mr-1.5 text-slate-400" />
+                      Set Common Enrollment Time by Block
+                    </button>
                     <button
                       onClick={() => handleCloseBatchEnrollment(activeCourseBatchTab)}
                       className="inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -843,7 +1194,7 @@ function AdminDashboard({ user, onLogout }) {
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student Name</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Email</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Batch</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Batch Year</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Enrolled On (IST)</th>
                 </tr>
               </thead>
@@ -924,6 +1275,7 @@ function AdminDashboard({ user, onLogout }) {
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Email</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Batch</th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -940,6 +1292,7 @@ function AdminDashboard({ user, onLogout }) {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{student.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{student.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{student.batch}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                           <button
                             onClick={() => handleDeleteStudentConfirmation(student._id, "single")}
@@ -975,7 +1328,7 @@ function AdminDashboard({ user, onLogout }) {
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="editBatch" className="block text-sm font-medium text-slate-700 mb-1">Batch</label>
                 <input
@@ -984,6 +1337,48 @@ function AdminDashboard({ user, onLogout }) {
                   id="editBatch"
                   className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   value={editFormData.batch}
+                  onChange={handleEditFormChange}
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="editBlock" className="block text-sm font-medium text-slate-700 mb-1">Block</label>
+                <select
+                  name="block"
+                  id="editBlock"
+                  className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={editFormData.block}
+                  onChange={handleEditFormChange}
+                  required
+                >
+                  <option value="">Select Block</option>
+                  {BLOCK_OPTIONS.map((blockOption) => (
+                    <option key={blockOption} value={blockOption}>{blockOption}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="editDepartment" className="block text-sm font-medium text-slate-700 mb-1">Department</label>
+                <input
+                  type="text"
+                  name="department"
+                  id="editDepartment"
+                  className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={editFormData.department}
+                  onChange={handleEditFormChange}
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="editProfessorName" className="block text-sm font-medium text-slate-700 mb-1">Professor Name</label>
+                <input
+                  type="text"
+                  name="professorName"
+                  id="editProfessorName"
+                  className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={editFormData.professorName}
                   onChange={handleEditFormChange}
                   required
                 />
@@ -1000,37 +1395,6 @@ function AdminDashboard({ user, onLogout }) {
                   min="1"
                   required
                 />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="editEnrollmentOpenTime" className="block text-sm font-medium text-slate-700 mb-1 flex justify-between">
-                <span>Enrollment Open Time (IST)</span>
-                <span className="text-xs text-slate-400 font-normal">Clear to unset</span>
-              </label>
-              <input
-                type="datetime-local"
-                name="enrollmentOpenTime"
-                id="editEnrollmentOpenTime"
-                className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-slate-50"
-                value={editFormData.enrollmentOpenTime}
-                onChange={handleEditFormChange}
-                disabled={editFormData.isEnrollmentActive}
-              />
-            </div>
-            <div className="flex items-start bg-slate-50 p-3 rounded-md border border-slate-200">
-              <div className="flex h-5 items-center">
-                <input
-                  type="checkbox"
-                  id="editIsEnrollmentActive"
-                  name="isEnrollmentActive"
-                  checked={editFormData.isEnrollmentActive}
-                  onChange={handleEditFormChange}
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                />
-              </div>
-              <div className="ml-3 text-sm">
-                <label htmlFor="editIsEnrollmentActive" className="font-medium text-slate-900">Enrollment Active</label>
-                <p className="text-slate-500">Allow students to enroll in this course right now.</p>
               </div>
             </div>
             <div className="pt-4 flex justify-end gap-3 border-t border-slate-200">
@@ -1050,6 +1414,85 @@ function AdminDashboard({ user, onLogout }) {
             </div>
           </form>
         )}
+      </Modal>
+
+      {/* Batch Enrollment Settings Modal */}
+      <Modal
+        isOpen={isBatchEnrollmentModalOpen}
+        onClose={closeBatchEnrollmentModal}
+        title={`Batch Enrollment Settings${batchEnrollmentFormData.batch ? `: ${batchEnrollmentFormData.batch}` : ""}`}
+      >
+        <form onSubmit={handleUpdateBatchEnrollment} className="p-6 space-y-5">
+          <div className="rounded-md bg-slate-50 border border-slate-200 px-3 py-2 text-sm text-slate-700">
+            This will apply the same enrollment opening settings to all courses in the selected batch and block.
+          </div>
+          <div>
+            <label htmlFor="batchEnrollmentBlock" className="block text-sm font-medium text-slate-700 mb-1">Block</label>
+            <select
+              id="batchEnrollmentBlock"
+              name="block"
+              value={batchEnrollmentFormData.block}
+              onChange={handleBatchEnrollmentFormChange}
+              className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              required
+            >
+              <option value="">Select Block</option>
+              {BLOCK_OPTIONS.map((blockOption) => (
+                <option key={blockOption} value={blockOption}>{blockOption}</option>
+              ))}
+            </select>
+            {!hasCoursesForSelectedBatchBlock && batchEnrollmentFormData.block && (
+              <p className="mt-2 text-xs text-amber-700">No courses found for this batch/block combination.</p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="batchEnrollmentOpenTime" className="flex justify-between text-sm font-medium text-slate-700 mb-1">
+              <span>Enrollment Open Time (IST)</span>
+              <span className="text-xs text-slate-400 font-normal">Clear to close when not active</span>
+            </label>
+            <input
+              type="datetime-local"
+              id="batchEnrollmentOpenTime"
+              name="enrollmentOpenTime"
+              className="block w-full rounded-md border-slate-300 py-2 px-3 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-slate-50"
+              value={batchEnrollmentFormData.enrollmentOpenTime}
+              onChange={handleBatchEnrollmentFormChange}
+              disabled={batchEnrollmentFormData.isEnrollmentActive}
+            />
+          </div>
+          <div className="flex items-start bg-slate-50 p-3 rounded-md border border-slate-200">
+            <div className="flex h-5 items-center">
+              <input
+                type="checkbox"
+                id="batchIsEnrollmentActive"
+                name="isEnrollmentActive"
+                checked={batchEnrollmentFormData.isEnrollmentActive}
+                onChange={handleBatchEnrollmentFormChange}
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="ml-3 text-sm">
+              <label htmlFor="batchIsEnrollmentActive" className="font-medium text-slate-900">Enrollment Active</label>
+              <p className="text-slate-500">Allow students to enroll in all courses of this batch right now.</p>
+            </div>
+          </div>
+          <div className="pt-4 flex justify-end gap-3 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={closeBatchEnrollmentModal}
+              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!hasCoursesForSelectedBatchBlock}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+            >
+              Save Batch Settings
+            </button>
+          </div>
+        </form>
       </Modal>
 
       {/* Delete Confirmation Modal */}
