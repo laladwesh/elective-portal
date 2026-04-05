@@ -13,6 +13,7 @@ import {
   UserPlusIcon,
   UserGroupIcon,
   ArrowLeftIcon,
+  MagnifyingGlassIcon,
   PencilSquareIcon,
   TrashIcon,
   IdentificationIcon,
@@ -29,6 +30,7 @@ function UserManagement({ user }) {
   const [activeBatchTab, setActiveBatchTab] = useState("");
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
 
   // State for Add User Form
   const [newUser, setNewUser] = useState({
@@ -108,7 +110,7 @@ function UserManagement({ user }) {
     
     // Validation
     if (newUser.role === 'student' && !newUser.batch) {
-      toast.error("Batch is required for students");
+      toast.error("Batch year is required for students");
       return;
     }
 
@@ -165,7 +167,7 @@ function UserManagement({ user }) {
 
     // Validation
     if (editFormData.role === 'student' && !editFormData.batch) {
-      toast.error("Batch is required for students");
+      toast.error("Batch year is required for students");
       return;
     }
 
@@ -194,16 +196,28 @@ function UserManagement({ user }) {
   // Handle select all users
   const handleSelectAllUsers = (e) => {
     const isChecked = e.target.checked;
-    const currentUsers = activeTab === 'students' 
+    const usersInScope = activeTab === 'students' 
       ? (activeBatchTab ? usersByBatch[activeBatchTab] : [])
       : admins;
+    const normalizedQuery = userSearchQuery.trim().toLowerCase();
+    const usersToSelect = usersInScope.filter((u) => {
+      if (!normalizedQuery) return true;
+      const name = (u.name || "").toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      return name.includes(normalizedQuery) || email.includes(normalizedQuery);
+    });
 
     if (isChecked) {
-      const allIds = currentUsers.map(u => u._id);
+      const allIds = usersToSelect.map(u => u._id);
       setSelectedUserIds(allIds);
     } else {
       setSelectedUserIds([]);
     }
+  };
+
+  const handleUserSearchChange = (e) => {
+    setUserSearchQuery(e.target.value);
+    setSelectedUserIds([]);
   };
 
   // Handle delete single user
@@ -277,7 +291,17 @@ function UserManagement({ user }) {
   const currentUsers = activeTab === 'students' 
     ? (activeBatchTab ? usersByBatch[activeBatchTab] : [])
     : admins;
-  const areAllSelected = currentUsers.length > 0 && currentUsers.every(u => selectedUserIds.includes(u._id));
+  const normalizedSearchQuery = userSearchQuery.trim().toLowerCase();
+  const filteredCurrentUsers = currentUsers.filter((currentUser) => {
+    if (!normalizedSearchQuery) return true;
+
+    const name = (currentUser.name || "").toLowerCase();
+    const email = (currentUser.email || "").toLowerCase();
+    return name.includes(normalizedSearchQuery) || email.includes(normalizedSearchQuery);
+  });
+  const areAllSelected =
+    filteredCurrentUsers.length > 0 &&
+    filteredCurrentUsers.every((u) => selectedUserIds.includes(u._id));
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -483,6 +507,22 @@ function UserManagement({ user }) {
                 </nav>
               </div>
 
+              {/* Search */}
+              <div className="mb-4">
+                <label htmlFor="userSearch" className="sr-only">Search users by name or email</label>
+                <div className="relative">
+                  <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    id="userSearch"
+                    type="text"
+                    value={userSearchQuery}
+                    onChange={handleUserSearchChange}
+                    placeholder="Search by name or email"
+                    className="w-full md:w-96 pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
               {/* Students View with Batch Tabs */}
               {activeTab === 'students' && sortedBatches.length > 0 && (
                 <div>
@@ -510,7 +550,7 @@ function UserManagement({ user }) {
               )}
 
               {/* Action Buttons */}
-              {currentUsers.length > 0 && (
+              {filteredCurrentUsers.length > 0 && (
                 <div className="flex justify-end mb-4">
                   {selectedUserIds.length > 0 && (
                     <button
@@ -525,7 +565,7 @@ function UserManagement({ user }) {
               )}
 
               {/* Users Table */}
-              {currentUsers.length > 0 ? (
+              {filteredCurrentUsers.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -558,7 +598,7 @@ function UserManagement({ user }) {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {currentUsers.map((currentUser) => (
+                      {filteredCurrentUsers.map((currentUser) => (
                         <tr key={currentUser._id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
@@ -620,7 +660,9 @@ function UserManagement({ user }) {
                 </div>
               ) : (
                 <p className="text-gray-600 text-center py-4">
-                  {activeTab === 'students' ? 'No students found in this batch.' : 'No admins found.'}
+                  {userSearchQuery.trim()
+                    ? (activeTab === 'students' ? 'No matching students found.' : 'No matching admins found.')
+                    : (activeTab === 'students' ? 'No students found in this batch.' : 'No admins found.')}
                 </p>
               )}
             </div>
@@ -682,7 +724,7 @@ function UserManagement({ user }) {
               {editFormData.role === 'student' && (
                 <div>
                   <label htmlFor="editBatch" className="block text-sm font-medium text-gray-700 mb-1">
-                    Batch
+                    Batch Year
                   </label>
                   <input
                     type="text"
