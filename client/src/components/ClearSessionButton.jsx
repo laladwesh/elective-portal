@@ -53,9 +53,9 @@ function ClearSessionButton({ user, onSessionCleared, onRequestConfirmation }) {
     return (
         <button
             onClick={handleClearAllCourses}
-            className="flex items-center justify-center px-6 py-4 bg-red-700 text-white font-semibold rounded-lg shadow-lg hover:bg-red-800 transition duration-300 ease-in-out"
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-            <TrashIcon className="w-6 h-6 mr-3" />
+            <TrashIcon className="w-4 h-4 mr-2 text-slate-400" />
             Clear All Courses & Enrollments
         </button>
     );

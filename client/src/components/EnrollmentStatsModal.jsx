@@ -261,9 +261,9 @@ function EnrollmentStatsModal({ user }) {
     <>
       <button
         onClick={handleOpenStatsModal}
-        className="flex items-center px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out"
+        className="inline-flex items-center whitespace-nowrap rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
-        <ChartBarIcon className="w-5 h-5 mr-2" />
+        <ChartBarIcon className="w-4 h-4 mr-2 text-slate-400" />
         Show Stats
       </button>
 
@@ -304,13 +304,13 @@ function EnrollmentStatsModal({ user }) {
               <ArrowDownTrayIcon className="w-5 h-5 mr-2 text-gray-600" />
               Download Unenrolled Students List
             </h3>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="relative w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-[190px]">
                 <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                 <select
                   value={selectedBatch}
                   onChange={(e) => setSelectedBatch(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm"
+                  className="block w-full rounded-md border border-slate-300 bg-white pl-10 pr-8 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="">Select Batch</option>
                   {batches.map((batch) => (
@@ -321,9 +321,9 @@ function EnrollmentStatsModal({ user }) {
               <button
                 onClick={handleDownloadExcel}
                 disabled={!selectedBatch || unenrolledStudentsData.length === 0}
-                className="flex-grow sm:flex-grow-0 flex items-center justify-center px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <ArrowDownTrayIcon className="w-5 h-5 mr-2" />
+                <ArrowDownTrayIcon className="w-4 h-4 mr-2 text-slate-400" />
                 Download Excel
               </button>
 
@@ -341,9 +341,9 @@ function EnrollmentStatsModal({ user }) {
                   return (
                     <button
                       disabled={!selectedBatch || loading || unenrolledStudentsData.length === 0}
-                      className="flex-grow sm:flex-grow-0 flex items-center justify-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <ArrowDownTrayIcon className="w-5 h-5 mr-2" />
+                      <ArrowDownTrayIcon className="w-4 h-4 mr-2 text-slate-400" />
                       {loading ? 'Generating PDF...' : 'Download PDF'}
                     </button>
                   );

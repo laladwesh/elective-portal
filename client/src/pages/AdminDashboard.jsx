@@ -25,7 +25,6 @@ import {
   CalendarIcon,
   IdentificationIcon,
   EnvelopeIcon,
-  BuildingLibraryIcon,
   TableCellsIcon,
   TagIcon,
   PencilSquareIcon,
@@ -692,16 +691,125 @@ function AdminDashboard({ user, onLogout }) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Spectral:ital,wght@0,600;0,700;1,600&display=swap');
+
+        .admin-shell {
+          --auth-bg: #efeee9;
+          --auth-bg-deep: #e4e2dc;
+          --auth-ink: #1f2428;
+          --auth-muted: #5d676f;
+          --auth-line: #d8d6cf;
+          --auth-card: #fbfaf7;
+          --auth-accent: #24546f;
+          --auth-accent-soft: #d9e6ed;
+          --auth-accent-strong: #1f465d;
+
+          position: relative;
+          min-height: 100svh;
+          color: var(--auth-ink);
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          background:
+            radial-gradient(1200px 800px at -10% -10%, #f7f6f2 0%, transparent 65%),
+            radial-gradient(900px 550px at 110% 10%, #dfe6e2 0%, transparent 70%),
+            linear-gradient(160deg, var(--auth-bg) 0%, var(--auth-bg-deep) 100%);
+          overflow: hidden;
+        }
+
+        .admin-shell::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image:
+            linear-gradient(to right, rgba(31, 36, 40, 0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(31, 36, 40, 0.03) 1px, transparent 1px);
+          background-size: 34px 34px;
+          mask-image: radial-gradient(circle at 45% 30%, black 10%, transparent 85%);
+          z-index: 0;
+        }
+
+        .admin-shell h1,
+        .admin-shell h2,
+        .admin-shell h3 {
+          font-family: 'Spectral', serif;
+          letter-spacing: -0.01em;
+        }
+
+        .admin-fade-up {
+          opacity: 0;
+          animation: adminFadeUp 650ms cubic-bezier(0.18, 0.68, 0.24, 0.98) forwards;
+        }
+
+        @keyframes adminFadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .admin-surface {
+          background: var(--auth-card);
+          border-color: var(--auth-line) !important;
+          box-shadow: 0 14px 42px rgba(31, 36, 40, 0.08);
+        }
+
+        .admin-soft-surface {
+          background: rgba(251, 250, 247, 0.72);
+          border-color: rgba(216, 214, 207, 0.8) !important;
+        }
+
+        .admin-shell [class*="bg-indigo-600"] {
+          background-color: var(--auth-accent) !important;
+        }
+
+        .admin-shell [class*="hover:bg-indigo-700"]:hover {
+          background-color: var(--auth-accent-strong) !important;
+        }
+
+        .admin-shell [class*="text-indigo-600"] {
+          color: var(--auth-accent) !important;
+        }
+
+        .admin-shell [class*="hover:text-indigo-600"]:hover {
+          color: var(--auth-accent) !important;
+        }
+
+        .admin-shell [class*="hover:text-indigo-700"]:hover {
+          color: var(--auth-accent-strong) !important;
+        }
+
+        .admin-shell [class*="border-indigo-600"] {
+          border-color: var(--auth-accent) !important;
+        }
+
+        .admin-shell [class*="bg-indigo-100"] {
+          background-color: var(--auth-accent-soft) !important;
+        }
+
+        .admin-shell [class*="focus:border-indigo-500"]:focus {
+          border-color: var(--auth-accent) !important;
+        }
+
+        .admin-shell [class*="focus:ring-indigo-500"]:focus {
+          --tw-ring-color: rgba(36, 84, 111, 0.45) !important;
+        }
+      `}</style>
+
+      <div className="admin-shell flex min-h-screen flex-col text-slate-900">
+      <div className="pointer-events-none absolute -left-24 top-8 z-0 h-72 w-72 rounded-full border border-white/55 bg-white/20 blur-[2px]" aria-hidden="true" />
+      <div className="pointer-events-none absolute -right-20 bottom-10 z-0 h-56 w-56 rounded-full border border-slate-400/20 bg-slate-300/20 blur-[1px]" aria-hidden="true" />
       {/* Top Navigation */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+      <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-[rgba(251,250,247,0.88)] backdrop-blur-md">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-1.5 rounded-md shadow-sm">
-              <BuildingLibraryIcon className="w-6 h-6 text-white" />
-            </div>
+          <div className="flex items-center">
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-              Admin Portal
+              PIMS Elective Portal
             </h1>
           </div>
           <div className="flex items-center gap-6">
@@ -722,53 +830,58 @@ function AdminDashboard({ user, onLogout }) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+      <main className="relative z-10 flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         
         {/* Page Header & Global Action Toolbar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="admin-fade-up flex flex-col gap-4" style={{ animationDelay: "70ms" }}>
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900">Dashboard Overview</h2>
-            <p className="text-sm text-slate-500 mt-1">Manage system configurations, enrollments, and user data.</p>
+            <p className="inline-flex items-center rounded-full border border-slate-300/80 bg-slate-100/85 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-600">
+              PRASAD INSTITUTE OF MEDICAL SCIENCES
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold text-slate-900">Dashboard Overview</h2>
+            <p className="text-sm text-slate-600 mt-1">Manage courses, enrollments, and student records in one focused workspace.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => navigate('/admin/users')}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium bg-white border border-slate-300 rounded-md text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-            >
-              <UserGroupIcon className="w-4 h-4 mr-2 text-slate-400" />
-              Manage Users
-            </button>
-            <div className="inline-flex items-center justify-center">
-                <EnrollmentStatsModal user={user} />
-            </div>
-            <div className="inline-flex items-center justify-center">
-                <ClearSessionButton
-                  user={user}
-                  onSessionCleared={handleSessionCleared}
-                  onRequestConfirmation={(modalConfig) => setConfirmationModal({ ...modalConfig, isOpen: true })}
-                />
-            </div>
-            <div className="inline-flex items-center justify-center">
-                <DownloadReportsButton user={user} config={config} />
+          <div className="w-full">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => navigate('/admin/users')}
+                className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 text-sm font-medium bg-white border border-slate-300 rounded-md text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              >
+                <UserGroupIcon className="w-4 h-4 mr-2 text-slate-400" />
+                Manage Users
+              </button>
+              <div className="inline-flex items-center justify-center whitespace-nowrap">
+                  <EnrollmentStatsModal user={user} />
+              </div>
+              <div className="inline-flex items-center justify-center whitespace-nowrap">
+                  <ClearSessionButton
+                    user={user}
+                    onSessionCleared={handleSessionCleared}
+                    onRequestConfirmation={(modalConfig) => setConfirmationModal({ ...modalConfig, isOpen: true })}
+                  />
+              </div>
+              <div className="inline-flex items-center justify-center whitespace-nowrap">
+                  <DownloadReportsButton user={user} config={config} />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Quick Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div className="admin-fade-up grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" style={{ animationDelay: "120ms" }}>
+          <div className="admin-surface rounded-xl border p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total Courses</p>
             <p className="mt-2 text-2xl font-semibold text-slate-900">{totalCoursesCount}</p>
           </div>
-          <div className="bg-white border border-emerald-200 rounded-xl p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Enrollment Active</p>
-            <p className="mt-2 text-2xl font-semibold text-emerald-700">{activeCoursesCount}</p>
+          <div className="admin-surface rounded-xl border p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Enrollment Active</p>
+            <p className="mt-2 text-2xl font-semibold text-indigo-600">{activeCoursesCount}</p>
           </div>
-          <div className="bg-white border border-orange-200 rounded-xl p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-orange-700">Full Courses</p>
-            <p className="mt-2 text-2xl font-semibold text-orange-700">{fullCoursesCount}</p>
+          <div className="admin-surface rounded-xl border p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Full Courses</p>
+            <p className="mt-2 text-2xl font-semibold text-indigo-600">{fullCoursesCount}</p>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="admin-surface rounded-xl border p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Seat Fill</p>
             <p className="mt-2 text-2xl font-semibold text-slate-900">{seatFillPercentage}%</p>
             <p className="text-xs text-slate-500 mt-1">{totalFilledSeats} of {totalSeatCapacity} seats</p>
@@ -776,8 +889,8 @@ function AdminDashboard({ user, onLogout }) {
         </div>
 
         {/* Create Batch Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
+        <div className="admin-fade-up admin-surface rounded-xl border overflow-hidden" style={{ animationDelay: "170ms" }}>
+          <div className="px-6 py-4 border-b border-slate-200 bg-white/60 flex items-center justify-between">
             <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <AcademicCapIcon className="w-5 h-5 text-indigo-600" />
               Create Courses for a Batch
@@ -950,8 +1063,8 @@ function AdminDashboard({ user, onLogout }) {
         </div>
 
         {/* Course Directory Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="admin-fade-up admin-surface rounded-xl border overflow-hidden flex flex-col" style={{ animationDelay: "220ms" }}>
+          <div className="px-6 py-4 border-b border-slate-200 bg-white/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
               <TableCellsIcon className="w-5 h-5 text-indigo-600" />
               Course Directory
@@ -1012,7 +1125,7 @@ function AdminDashboard({ user, onLogout }) {
 
               {/* Search & Filter Toolbar */}
               {activeCourseBatchTab && (
-                <div className="px-6 py-4 border-b border-slate-200 bg-white">
+                <div className="px-6 py-4 border-b border-slate-200 bg-white/75">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                     <div className="relative w-full lg:max-w-md">
                       <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1023,7 +1136,7 @@ function AdminDashboard({ user, onLogout }) {
                           setCourseSearchQuery(e.target.value);
                           setSelectedCourseIds([]);
                         }}
-                        placeholder="Search courses in this batch"
+                        placeholder="Search by course, block, department, or professor"
                         className="w-full pl-10 pr-3 py-2 rounded-md border border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                       />
                     </div>
@@ -1083,14 +1196,14 @@ function AdminDashboard({ user, onLogout }) {
                       {filteredCoursesInActiveBatch.length > 0 ? (
                         filteredCoursesInActiveBatch.map((course) => {
                           const isFull = course.enrolledStudentsCount >= course.intakeCapacity;
-                          let statusColor = course.isEnrollmentActive ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-800";
+                          let statusColor = course.isEnrollmentActive ? "bg-indigo-100 text-indigo-600" : "bg-slate-100 text-slate-800";
                           let statusText = course.isEnrollmentActive ? "Active" : "Closed";
-                          let dotColor = course.isEnrollmentActive ? "bg-green-500" : "bg-slate-400";
+                          let dotColor = course.isEnrollmentActive ? "bg-indigo-600" : "bg-slate-400";
 
                           if (isFull) {
-                            statusColor = "bg-orange-100 text-orange-800";
+                            statusColor = "bg-indigo-100 text-indigo-600";
                             statusText = course.isEnrollmentActive ? "Full (Closed)" : "Full";
-                            dotColor = "bg-orange-500";
+                            dotColor = "bg-indigo-600";
                           }
 
                           return (
@@ -1152,7 +1265,7 @@ function AdminDashboard({ user, onLogout }) {
                     </tbody>
                   </table>
                   {/* Table Footer Actions */}
-                  <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:justify-end gap-3">
+                  <div className="px-6 py-4 border-t border-slate-200 bg-white/60 flex flex-col sm:flex-row sm:justify-end gap-3">
                     <button
                       onClick={() => openBatchEnrollmentModal(activeCourseBatchTab)}
                       className="inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -1528,6 +1641,7 @@ function AdminDashboard({ user, onLogout }) {
         variant={confirmationModal.variant}
       />
     </div>
+    </>
   );
 }
 

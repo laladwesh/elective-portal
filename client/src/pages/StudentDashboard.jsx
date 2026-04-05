@@ -4,10 +4,8 @@ import { courseAPI } from '../services/apiService';
 
 // Heroicon Imports - Solid Icons
 import {
-    UserCircleIcon,
     AcademicCapIcon,
     ArrowRightOnRectangleIcon,
-    // CheckCircleIcon,
     XCircleIcon,
     CalendarDaysIcon,
     ClipboardDocumentCheckIcon,
@@ -83,188 +81,362 @@ function StudentDashboard({ user, onLogout }) {
         }
     };
 
+    const openCoursesCount = availableCourses.filter((course) => {
+        const isFull = course.enrolledStudentsCount >= course.intakeCapacity;
+        return course.isEnrollmentActive && !isFull;
+    }).length;
+
+    const upcomingCoursesCount = availableCourses.filter((course) => {
+        if (course.isEnrollmentActive || !course.enrollmentOpenTime) return false;
+        const openDate = new Date(course.enrollmentOpenTime);
+        return !Number.isNaN(openDate.getTime()) && new Date() < openDate;
+    }).length;
+
     return (
-        <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-            <div className="max-w-7xl mx-auto">
-                {/* Header Section */}
-                <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
-                    <h1 className="text-3xl font-extrabold text-gray-900 flex items-center">
-                        <UserCircleIcon className="w-8 h-8 mr-3 text-indigo-600" />
-                        Student Dashboard
-                    </h1>
-                    <div className="flex items-center space-x-4">
-                        <p className="text-lg text-gray-700">
-                            Welcome, <span className="font-semibold text-indigo-700">{user?.name}</span>
-                            {' '}(Batch: <span className="font-semibold text-indigo-700">{user?.batch}</span>)
-                        </p>
-                        <button
-                            onClick={onLogout}
-                            className="flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg shadow-md hover:bg-red-700 transition duration-300 ease-in-out"
-                        >
-                            <ArrowRightOnRectangleIcon className="w-5 h-5 mr-2" />
-                            Logout
-                        </button>
+        <>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Spectral:ital,wght@0,600;0,700;1,600&display=swap');
+
+                .student-shell {
+                    --auth-bg: #efeee9;
+                    --auth-bg-deep: #e4e2dc;
+                    --auth-ink: #1f2428;
+                    --auth-muted: #5d676f;
+                    --auth-line: #d8d6cf;
+                    --auth-card: #fbfaf7;
+                    --auth-accent: #24546f;
+                    --auth-accent-soft: #d9e6ed;
+                    --auth-accent-strong: #1f465d;
+                    --auth-button-ink: #f7fbfd;
+
+                    position: relative;
+                    min-height: 100svh;
+                    color: var(--auth-ink);
+                    font-family: 'Plus Jakarta Sans', sans-serif;
+                    background:
+                        radial-gradient(1200px 800px at -10% -10%, #f7f6f2 0%, transparent 65%),
+                        radial-gradient(900px 550px at 110% 10%, #dfe6e2 0%, transparent 70%),
+                        linear-gradient(160deg, var(--auth-bg) 0%, var(--auth-bg-deep) 100%);
+                    overflow: hidden;
+                }
+
+                .student-shell::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
+                    background-image:
+                        linear-gradient(to right, rgba(31, 36, 40, 0.03) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(31, 36, 40, 0.03) 1px, transparent 1px);
+                    background-size: 34px 34px;
+                    mask-image: radial-gradient(circle at 45% 30%, black 10%, transparent 85%);
+                    z-index: 0;
+                }
+
+                .student-shell h1,
+                .student-shell h2,
+                .student-shell h3 {
+                    font-family: 'Spectral', serif;
+                    letter-spacing: -0.01em;
+                }
+
+                .student-fade-up {
+                    opacity: 0;
+                    animation: studentFadeUp 650ms cubic-bezier(0.18, 0.68, 0.24, 0.98) forwards;
+                }
+
+                @keyframes studentFadeUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(14px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                .student-surface {
+                    background: var(--auth-card);
+                    border: 1px solid var(--auth-line);
+                    box-shadow: 0 14px 42px rgba(31, 36, 40, 0.08);
+                }
+
+                .student-soft-surface {
+                    background: rgba(251, 250, 247, 0.7);
+                    border: 1px solid rgba(216, 214, 207, 0.85);
+                }
+
+                .student-badge-accent {
+                    background: var(--auth-accent-soft);
+                    color: var(--auth-accent);
+                    border: 1px solid rgba(36, 84, 111, 0.22);
+                }
+
+                .student-badge-neutral {
+                    background: #f1f5f9;
+                    color: #475569;
+                    border: 1px solid #dbe1e8;
+                }
+
+                .student-btn-primary {
+                    background: var(--auth-accent);
+                    border: 1px solid transparent;
+                    color: var(--auth-button-ink);
+                }
+
+                .student-btn-primary:hover {
+                    background: var(--auth-accent-strong);
+                }
+
+                .student-btn-primary:focus-visible {
+                    outline: none;
+                    box-shadow: 0 0 0 2px rgba(36, 84, 111, 0.4);
+                }
+
+                .student-btn-disabled {
+                    background: #dfe3e8;
+                    border: 1px solid #cfd6dd;
+                    color: #64707d;
+                    cursor: not-allowed;
+                }
+
+                .student-logout-btn {
+                    background: white;
+                    border: 1px solid #cbd5e1;
+                    color: #334155;
+                    transition: all 0.2s ease;
+                }
+
+                .student-logout-btn:hover {
+                    background: #f8fafc;
+                    color: var(--auth-accent);
+                }
+
+                .student-logout-btn:focus-visible {
+                    outline: none;
+                    box-shadow: 0 0 0 2px rgba(36, 84, 111, 0.35);
+                }
+
+                .student-table thead tr {
+                    background: rgba(148, 163, 184, 0.12);
+                }
+
+                .student-table tbody tr:hover {
+                    background: rgba(148, 163, 184, 0.07);
+                }
+            `}</style>
+
+            <div className="student-shell px-4 py-4 sm:min-h-screen sm:px-6 sm:py-8 lg:px-8">
+                <div className="pointer-events-none absolute -left-24 top-8 z-0 h-72 w-72 rounded-full border border-white/55 bg-white/20 blur-[2px]" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-20 bottom-10 z-0 h-56 w-56 rounded-full border border-slate-400/20 bg-slate-300/20 blur-[1px]" aria-hidden="true" />
+
+                <div className="relative z-10 mx-auto w-full max-w-[1600px] space-y-6">
+                    <header className="student-fade-up student-surface rounded-2xl p-5 sm:p-6" style={{ animationDelay: '60ms' }}>
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <p className="inline-flex items-center rounded-full border border-slate-300/80 bg-slate-100/85 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-600">
+                                    PRASAD INSTITUTE OF MEDICAL SCIENCES
+                                </p>
+                                <h1 className="mt-3 text-3xl font-semibold text-slate-900 sm:text-4xl">Student Dashboard</h1>
+                                <p className="mt-2 text-sm text-slate-600 sm:text-base">
+                                    Review elective availability and complete your enrollment in one focused workspace.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="student-soft-surface rounded-full px-4 py-2 text-sm text-slate-700">
+                                    Student: <span className="font-semibold text-slate-900">{user?.name}</span>
+                                </div>
+                                <div className="student-soft-surface rounded-full px-4 py-2 text-sm text-slate-700">
+                                    Batch: <span className="font-semibold text-slate-900">{user?.batch}</span>
+                                </div>
+                                <button
+                                    onClick={onLogout}
+                                    className="student-logout-btn inline-flex items-center rounded-md px-4 py-2 text-sm font-medium"
+                                >
+                                    <ArrowRightOnRectangleIcon className="mr-2 h-4 w-4" />
+                                    Sign out
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="student-fade-up grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" style={{ animationDelay: '110ms' }}>
+                        <div className="student-surface rounded-xl p-4">
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Courses Available</p>
+                            <p className="mt-2 text-2xl font-semibold text-slate-900">{availableCourses.length}</p>
+                        </div>
+                        <div className="student-surface rounded-xl p-4">
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Open Right Now</p>
+                            <p className="mt-2 text-2xl font-semibold text-[var(--auth-accent)]">{openCoursesCount}</p>
+                        </div>
+                        <div className="student-surface rounded-xl p-4">
+                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Enrollment Status</p>
+                            <p className="mt-2 text-lg font-semibold text-slate-900">{hasEnrolled ? 'Completed' : 'Pending'}</p>
+                            <p className="mt-1 text-xs text-slate-500">Upcoming windows: {upcomingCoursesCount}</p>
+                        </div>
                     </div>
-                </div>
 
-                {/* Available Courses for Student's Batch */}
-                <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100 mb-8">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
-                        <AcademicCapIcon className="w-7 h-7 mr-3 text-blue-600" />
-                        Available Elective Courses for your Batch ({user?.batch})
-                    </h2>
-                    {availableCourses.length === 0 ? (
-                        <p className="text-gray-600 py-4 text-center">
-                            No courses available for your batch at the moment, or enrollment has not yet opened. Please check back later.
-                        </p>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course Name</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Intake</th>
-                                        {/* Removed Enrolled count column as per request */}
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {availableCourses.map((course) => {
-                                        const isFull = course.enrolledStudentsCount >= course.intakeCapacity;
-                                        // Ensure Date objects are created from potentially string dates
-                                        const enrollmentOpenDate = course.enrollmentOpenTime ? new Date(course.enrollmentOpenTime) : null;
-                                        const now = new Date(); // Current time in UTC (server-side accurate)
+                    <section className="student-fade-up student-surface rounded-2xl p-6" style={{ animationDelay: '160ms' }}>
+                        <h2 className="mb-5 flex items-center gap-2 text-2xl font-semibold text-slate-900">
+                            <AcademicCapIcon className="h-6 w-6 text-[var(--auth-accent)]" />
+                            Available Elective Courses (Batch {user?.batch})
+                        </h2>
 
-                                        const isEnrollmentOpenTimeInFuture = enrollmentOpenDate && now < enrollmentOpenDate;
-                                        const isEnrollmentActiveByAdmin = course.isEnrollmentActive;
-                                        const isEnrolledByUserInThisCourse = myEnrollments.some(enrollment => enrollment.course._id === course._id);
+                        {availableCourses.length === 0 ? (
+                            <p className="py-6 text-center text-sm text-slate-600 sm:text-base">
+                                No courses are available for your batch at the moment. Please check back after the enrollment window opens.
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="student-table min-w-full divide-y divide-slate-200">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Course Name</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Department</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Professor</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Block</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Intake</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 sm:text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200 bg-white/85">
+                                        {availableCourses.map((course) => {
+                                            const isFull = course.enrolledStudentsCount >= course.intakeCapacity;
+                                            const enrollmentOpenDate = course.enrollmentOpenTime ? new Date(course.enrollmentOpenTime) : null;
+                                            const isEnrollmentOpenTimeInFuture = enrollmentOpenDate && new Date() < enrollmentOpenDate;
+                                            const isEnrollmentActiveByAdmin = course.isEnrollmentActive;
+                                            const isEnrolledByUserInThisCourse = myEnrollments.some((enrollment) => enrollment.course._id === course._id);
 
-                                        let statusText = '';
-                                        let statusColor = 'text-gray-600';
-                                        let buttonDisabled = false;
-                                        let buttonText = 'Enroll';
-                                        let buttonClass = 'bg-blue-600 hover:bg-blue-700';
-                                        let buttonIcon = <CheckIcon className="w-4 h-4 mr-1" />;
+                                            let statusText = '';
+                                            let statusClass = 'student-badge-neutral';
+                                            let buttonDisabled = false;
+                                            let buttonText = 'Enroll';
+                                            let buttonClass = 'student-btn-primary';
+                                            let buttonIcon = <CheckIcon className="mr-1 h-4 w-4" />;
 
-                                        if (isEnrolledByUserInThisCourse) {
-                                            statusText = 'Enrolled';
-                                            statusColor = 'text-green-600 font-semibold';
-                                            buttonText = 'Enrolled';
-                                            buttonDisabled = true;
-                                            buttonClass = 'bg-green-600 cursor-not-allowed';
-                                            buttonIcon = <ClipboardDocumentCheckIcon className="w-4 h-4 mr-1" />;
-                                        } else if (hasEnrolled) {
-                                            statusText = 'Already Enrolled in another course'; // More specific message
-                                            statusColor = 'text-orange-600 font-semibold';
-                                            buttonDisabled = true;
-                                            buttonClass = 'bg-gray-400 cursor-not-allowed';
-                                            buttonIcon = <LockClosedIcon className="w-4 h-4 mr-1" />;
-                                        } else if (isFull) { // Moved "Full" check up, as it's a hard stop
-                                            statusText = 'Full';
-                                            statusColor = 'text-red-600 font-semibold';
-                                            buttonDisabled = true;
-                                            buttonClass = 'bg-red-600 cursor-not-allowed';
-                                            buttonIcon = <XCircleIcon className="w-4 h-4 mr-1" />;
-                                        } else if (isEnrollmentActiveByAdmin) {
-                                            statusText = 'Open';
-                                            statusColor = 'text-green-600 font-semibold';
-                                            buttonIcon = <CheckIcon className="w-4 h-4 mr-1" />;
-                                        } else if (isEnrollmentOpenTimeInFuture) {
-                                            // Enrollment is scheduled for a future time and not active yet
-                                            statusText = `Opens: ${new Date(course.enrollmentOpenTime).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Kolkata' })}`;
-                                            statusColor = 'text-yellow-700 font-medium';
-                                            buttonDisabled = true;
-                                            buttonClass = 'bg-yellow-600 cursor-not-allowed';
-                                            buttonIcon = <ClockIcon className="w-4 h-4 mr-1" />;
-                                        } else {
-                                            statusText = 'Closed by Admin';
-                                            statusColor = 'text-red-600 font-semibold';
-                                            buttonDisabled = true;
-                                            buttonClass = 'bg-gray-400 cursor-not-allowed';
-                                            buttonIcon = <LockClosedIcon className="w-4 h-4 mr-1" />;
-                                        }
+                                            if (isEnrolledByUserInThisCourse) {
+                                                statusText = 'Enrolled';
+                                                statusClass = 'student-badge-accent';
+                                                buttonText = 'Enrolled';
+                                                buttonDisabled = true;
+                                                buttonClass = 'student-btn-disabled';
+                                                buttonIcon = <ClipboardDocumentCheckIcon className="mr-1 h-4 w-4" />;
+                                            } else if (hasEnrolled) {
+                                                statusText = 'Already enrolled in another course';
+                                                buttonDisabled = true;
+                                                buttonClass = 'student-btn-disabled';
+                                                buttonIcon = <LockClosedIcon className="mr-1 h-4 w-4" />;
+                                            } else if (isFull) {
+                                                statusText = 'Full';
+                                                buttonDisabled = true;
+                                                buttonClass = 'student-btn-disabled';
+                                                buttonIcon = <XCircleIcon className="mr-1 h-4 w-4" />;
+                                            } else if (isEnrollmentActiveByAdmin) {
+                                                statusText = 'Open';
+                                                statusClass = 'student-badge-accent';
+                                            } else if (isEnrollmentOpenTimeInFuture) {
+                                                statusText = `Opens: ${new Date(course.enrollmentOpenTime).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Kolkata' })}`;
+                                                buttonDisabled = true;
+                                                buttonClass = 'student-btn-disabled';
+                                                buttonIcon = <ClockIcon className="mr-1 h-4 w-4" />;
+                                            } else {
+                                                statusText = 'Closed by admin';
+                                                buttonDisabled = true;
+                                                buttonClass = 'student-btn-disabled';
+                                                buttonIcon = <LockClosedIcon className="mr-1 h-4 w-4" />;
+                                            }
 
+                                            return (
+                                                <tr key={course._id}>
+                                                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
+                                                        <div className="flex items-center">
+                                                            <TicketIcon className="mr-2 h-4 w-4 text-[var(--auth-accent)]" />
+                                                            {course.courseName}
+                                                        </div>
+                                                    </td>
+                                                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{course.department || '—'}</td>
+                                                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{course.professorName || '—'}</td>
+                                                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{course.block || '—'}</td>
+                                                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{course.intakeCapacity}</td>
+                                                    <td className="whitespace-nowrap px-6 py-4 text-sm">
+                                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${statusClass}`}>
+                                                            {statusText}
+                                                        </span>
+                                                    </td>
+                                                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium sm:text-right">
+                                                        <button
+                                                            onClick={() => handleEnroll(course._id)}
+                                                            disabled={buttonDisabled}
+                                                            className={`inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${buttonClass}`}
+                                                        >
+                                                            {buttonIcon}
+                                                            {buttonText}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </section>
 
-                                        return (
-                                            <tr key={course._id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
-                                                    <TicketIcon className="w-5 h-5 mr-2 text-indigo-500" />
-                                                    {course.courseName}
+                    <section className="student-fade-up student-surface rounded-2xl p-6" style={{ animationDelay: '210ms' }}>
+                        <h2 className="mb-5 flex items-center gap-2 text-2xl font-semibold text-slate-900">
+                            <ClipboardDocumentCheckIcon className="h-6 w-6 text-[var(--auth-accent)]" />
+                            My Enrolled Course
+                        </h2>
+
+                        {myEnrollments.length === 0 ? (
+                            <p className="py-6 text-center text-sm text-slate-600 sm:text-base">
+                                You are not currently enrolled in any elective course.
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="student-table min-w-full divide-y divide-slate-200">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Course Name</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Department</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Professor</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Batch</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Block</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">Enrollment Date (IST)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200 bg-white/85">
+                                        {myEnrollments.map((enrollment) => (
+                                            <tr key={enrollment._id}>
+                                                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
+                                                    <div className="flex items-center">
+                                                        <AcademicCapIcon className="mr-2 h-4 w-4 text-[var(--auth-accent)]" />
+                                                        {enrollment.course.courseName}
+                                                    </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.department || '—'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.professorName || '—'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.block || '—'}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.intakeCapacity}</td>
-                                                {/* Removed Enrolled count column */}
-                                                <td className={`px-6 py-4 whitespace-nowrap text-sm ${statusColor}`}>{statusText}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button
-                                                        onClick={() => handleEnroll(course._id)}
-                                                        disabled={buttonDisabled}
-                                                        className={`flex items-center justify-center ${buttonClass} text-white font-semibold py-2 px-4 rounded-md text-sm shadow-sm transition duration-200 ease-in-out`}
-                                                    >
-                                                        {buttonIcon}
-                                                        {buttonText}
-                                                    </button>
+                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{enrollment.course.department || '—'}</td>
+                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{enrollment.course.professorName || '—'}</td>
+                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{enrollment.course.batch}</td>
+                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{enrollment.course.block || '—'}</td>
+                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+                                                    <div className="flex items-center">
+                                                        <CalendarDaysIcon className="mr-2 h-4 w-4 text-slate-500" />
+                                                        {new Date(enrollment.enrollmentDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
+                                                    </div>
                                                 </td>
                                             </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-
-                {/* My Enrolled Courses (will show max 1 course) */}
-                <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
-                        <ClipboardDocumentCheckIcon className="w-7 h-7 mr-3 text-purple-600" />
-                        My Enrolled Course
-                    </h2>
-                    {myEnrollments.length === 0 ? (
-                        <p className="text-gray-600 py-4 text-center">You are not currently enrolled in any elective courses.</p>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course Name</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment Date (IST)</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {myEnrollments.map((enrollment) => (
-                                        <tr key={enrollment._id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
-                                                <AcademicCapIcon className="w-5 h-5 mr-2 text-indigo-500" />
-                                                {enrollment.course.courseName}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.course.department || '—'}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.course.professorName || '—'}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.course.batch}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.course.block || '—'}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center">
-                                                <CalendarDaysIcon className="w-5 h-5 mr-2 text-gray-500" />
-                                                {new Date(enrollment.enrollmentDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </section>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 
