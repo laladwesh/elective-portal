@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { courseAPI } from '../services/apiService';
 
@@ -95,7 +94,8 @@ function StudentDashboard({ user, onLogout }) {
                     </h1>
                     <div className="flex items-center space-x-4">
                         <p className="text-lg text-gray-700">
-                            Welcome, <span className="font-semibold text-indigo-700">{user?.name}</span> (Batch: <span className="font-semibold text-indigo-700">{user?.batch}</span>)
+                            Welcome, <span className="font-semibold text-indigo-700">{user?.name}</span>
+                            {' '}(Batch: <span className="font-semibold text-indigo-700">{user?.batch}</span>)
                         </p>
                         <button
                             onClick={onLogout}
@@ -123,6 +123,9 @@ function StudentDashboard({ user, onLogout }) {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course Name</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Intake</th>
                                         {/* Removed Enrolled count column as per request */}
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -136,7 +139,7 @@ function StudentDashboard({ user, onLogout }) {
                                         const enrollmentOpenDate = course.enrollmentOpenTime ? new Date(course.enrollmentOpenTime) : null;
                                         const now = new Date(); // Current time in UTC (server-side accurate)
 
-                                        const isEnrollmentOpenTimePassed = enrollmentOpenDate && now >= enrollmentOpenDate;
+                                        const isEnrollmentOpenTimeInFuture = enrollmentOpenDate && now < enrollmentOpenDate;
                                         const isEnrollmentActiveByAdmin = course.isEnrollmentActive;
                                         const isEnrolledByUserInThisCourse = myEnrollments.some(enrollment => enrollment.course._id === course._id);
 
@@ -166,30 +169,23 @@ function StudentDashboard({ user, onLogout }) {
                                             buttonDisabled = true;
                                             buttonClass = 'bg-red-600 cursor-not-allowed';
                                             buttonIcon = <XCircleIcon className="w-4 h-4 mr-1" />;
-                                        } else if (!isEnrollmentActiveByAdmin) {
-                                            statusText = 'Closed by Admin';
-                                            statusColor = 'text-red-600 font-semibold';
-                                            buttonDisabled = true;
-                                            buttonClass = 'bg-gray-400 cursor-not-allowed';
-                                            buttonIcon = <LockClosedIcon className="w-4 h-4 mr-1" />;
-                                        } else if (!enrollmentOpenDate) { // If enrollment time is not set
-                                            statusText = 'Enrollment Not Scheduled';
-                                            statusColor = 'text-gray-500';
-                                            buttonDisabled = true;
-                                            buttonClass = 'bg-gray-400 cursor-not-allowed';
-                                            buttonIcon = <ClockIcon className="w-4 h-4 mr-1" />;
-                                        } else if (!isEnrollmentOpenTimePassed) {
-                                            // Enrollment is active by admin, but time hasn't arrived yet
+                                        } else if (isEnrollmentActiveByAdmin) {
+                                            statusText = 'Open';
+                                            statusColor = 'text-green-600 font-semibold';
+                                            buttonIcon = <CheckIcon className="w-4 h-4 mr-1" />;
+                                        } else if (isEnrollmentOpenTimeInFuture) {
+                                            // Enrollment is scheduled for a future time and not active yet
                                             statusText = `Opens: ${new Date(course.enrollmentOpenTime).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Kolkata' })}`;
                                             statusColor = 'text-yellow-700 font-medium';
                                             buttonDisabled = true;
                                             buttonClass = 'bg-yellow-600 cursor-not-allowed';
                                             buttonIcon = <ClockIcon className="w-4 h-4 mr-1" />;
                                         } else {
-                                            // All conditions met: Enrollment is Open
-                                            statusText = 'Open';
-                                            statusColor = 'text-green-600 font-semibold';
-                                            buttonIcon = <CheckIcon className="w-4 h-4 mr-1" />;
+                                            statusText = 'Closed by Admin';
+                                            statusColor = 'text-red-600 font-semibold';
+                                            buttonDisabled = true;
+                                            buttonClass = 'bg-gray-400 cursor-not-allowed';
+                                            buttonIcon = <LockClosedIcon className="w-4 h-4 mr-1" />;
                                         }
 
 
@@ -199,6 +195,9 @@ function StudentDashboard({ user, onLogout }) {
                                                     <TicketIcon className="w-5 h-5 mr-2 text-indigo-500" />
                                                     {course.courseName}
                                                 </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.department || '—'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.professorName || '—'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.block || '—'}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.intakeCapacity}</td>
                                                 {/* Removed Enrolled count column */}
                                                 <td className={`px-6 py-4 whitespace-nowrap text-sm ${statusColor}`}>{statusText}</td>
@@ -235,7 +234,10 @@ function StudentDashboard({ user, onLogout }) {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course Name</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment Date (IST)</th>
                                     </tr>
                                 </thead>
@@ -246,7 +248,10 @@ function StudentDashboard({ user, onLogout }) {
                                                 <AcademicCapIcon className="w-5 h-5 mr-2 text-indigo-500" />
                                                 {enrollment.course.courseName}
                                             </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.course.department || '—'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.course.professorName || '—'}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.course.batch}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{enrollment.course.block || '—'}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center">
                                                 <CalendarDaysIcon className="w-5 h-5 mr-2 text-gray-500" />
                                                 {new Date(enrollment.enrollmentDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
