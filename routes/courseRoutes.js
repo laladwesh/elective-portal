@@ -16,7 +16,8 @@ const {
   getEnrollmentStats,
   getUnenrolledStudents,
   syncEnrollmentCounts,
-  closeBatchEnrollment
+  closeBatchEnrollment,
+  setBatchEnrollmentSettings
 } = require('../controllers/courseController');
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
 const router = express.Router();
@@ -34,6 +35,7 @@ router.delete('/bulk-delete', protect, authorizeRoles('admin'), bulkDeleteCourse
 
 // PUT routes - Specific routes MUST come before /:id
 router.put('/close-batch-enrollment', protect, authorizeRoles('admin'), closeBatchEnrollment); // NEW ROUTE for closing batch enrollment
+router.put('/set-batch-enrollment', protect, authorizeRoles('admin'), setBatchEnrollmentSettings);
 router.put('/:id/set-enrollment-time', protect, authorizeRoles('admin'), setEnrollmentTime);
 router.put('/:id', protect, authorizeRoles('admin'), updateCourse); // This MUST come after specific PUT routes
 
