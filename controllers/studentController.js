@@ -15,10 +15,10 @@ const addStudentByAdmin = asyncHandler(async (req, res) => {
     throw new Error('Please enter all required fields (Name, Email)');
   }
 
-  // Validate that students must have a batch
+  // Validate that students must have a batch year
   if (role === 'student' && !batch) {
     res.status(400);
-    throw new Error('Batch is required for students');
+    throw new Error('Batch year is required for students');
   }
 
   const userExists = await User.findOne({ email });
@@ -254,17 +254,26 @@ const updateStudent = asyncHandler(async (req, res) => {
     }
   }
 
-  // Validate that students have a batch
-  if (role === 'student' && !batch) {
+  const nextRole = role || student.role;
+
+  // Validate that students have a batch year
+  const nextBatch = typeof batch !== 'undefined' ? batch : student.batch;
+  if (nextRole === 'student' && !nextBatch) {
     res.status(400);
-    throw new Error('Batch is required for students');
+    throw new Error('Batch year is required for students');
   }
 
   // Update fields
   if (name) student.name = name;
   if (email) student.email = email;
-  if (batch !== undefined) student.batch = batch; // Allow clearing batch for non-students
   if (role) student.role = role;
+
+  if (student.role === 'student') {
+    if (batch !== undefined) student.batch = batch;
+  } else {
+    // Admin users should not carry student batch metadata
+    student.batch = undefined;
+  }
 
   const updatedStudent = await student.save();
 
