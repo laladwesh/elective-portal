@@ -693,7 +693,7 @@ function AdminDashboard({ user, onLogout }) {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Spectral:ital,wght@0,600;0,700;1,600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 
         .admin-shell {
           --auth-bg: #efeee9;
@@ -709,7 +709,7 @@ function AdminDashboard({ user, onLogout }) {
           position: relative;
           min-height: 100svh;
           color: var(--auth-ink);
-          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           background:
             radial-gradient(1200px 800px at -10% -10%, #f7f6f2 0%, transparent 65%),
             radial-gradient(900px 550px at 110% 10%, #dfe6e2 0%, transparent 70%),
@@ -733,7 +733,7 @@ function AdminDashboard({ user, onLogout }) {
         .admin-shell h1,
         .admin-shell h2,
         .admin-shell h3 {
-          font-family: 'Spectral', serif;
+          font-family: 'Montserrat', sans-serif;
           letter-spacing: -0.01em;
         }
 

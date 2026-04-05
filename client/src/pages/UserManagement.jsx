@@ -304,33 +304,176 @@ function UserManagement({ user }) {
     filteredCurrentUsers.every((u) => selectedUserIds.includes(u._id));
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+        .user-shell {
+          --auth-bg: #efeee9;
+          --auth-bg-deep: #e4e2dc;
+          --auth-ink: #1f2428;
+          --auth-muted: #5d676f;
+          --auth-line: #d8d6cf;
+          --auth-card: #fbfaf7;
+          --auth-accent: #24546f;
+          --auth-accent-soft: #d9e6ed;
+          --auth-accent-strong: #1f465d;
+          --auth-button-ink: #f7fbfd;
+
+          position: relative;
+          min-height: 100svh;
+          color: var(--auth-ink);
+          font-family: 'Montserrat', sans-serif;
+          background:
+            radial-gradient(1200px 800px at -10% -10%, #f7f6f2 0%, transparent 65%),
+            radial-gradient(900px 550px at 110% 10%, #dfe6e2 0%, transparent 70%),
+            linear-gradient(160deg, var(--auth-bg) 0%, var(--auth-bg-deep) 100%);
+          overflow: hidden;
+        }
+
+        .user-shell::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image:
+            linear-gradient(to right, rgba(31, 36, 40, 0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(31, 36, 40, 0.03) 1px, transparent 1px);
+          background-size: 34px 34px;
+          mask-image: radial-gradient(circle at 45% 30%, black 10%, transparent 85%);
+          z-index: 0;
+        }
+
+        .user-shell h1,
+        .user-shell h2,
+        .user-shell h3 {
+          font-family: 'Montserrat', sans-serif;
+          letter-spacing: -0.01em;
+        }
+
+        .user-fade-up {
+          opacity: 0;
+          animation: userFadeUp 650ms cubic-bezier(0.18, 0.68, 0.24, 0.98) forwards;
+        }
+
+        @keyframes userFadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .user-surface {
+          background: var(--auth-card);
+          border: 1px solid var(--auth-line);
+          box-shadow: 0 14px 42px rgba(31, 36, 40, 0.08);
+        }
+
+        .user-soft-surface {
+          background: rgba(251, 250, 247, 0.72);
+          border: 1px solid rgba(216, 214, 207, 0.85);
+        }
+
+        .user-shell .user-table thead tr {
+          background: rgba(148, 163, 184, 0.12);
+        }
+
+        .user-shell .user-table tbody tr:hover {
+          background: rgba(148, 163, 184, 0.07);
+        }
+
+        .user-shell [class*="bg-indigo-600"],
+        .user-shell [class*="bg-blue-600"],
+        .user-shell [class*="bg-purple-600"] {
+          background-color: var(--auth-accent) !important;
+        }
+
+        .user-shell [class*="hover:bg-indigo-700"]:hover,
+        .user-shell [class*="hover:bg-blue-700"]:hover,
+        .user-shell [class*="hover:bg-purple-700"]:hover {
+          background-color: var(--auth-accent-strong) !important;
+        }
+
+        .user-shell [class*="text-indigo-600"],
+        .user-shell [class*="text-indigo-700"],
+        .user-shell [class*="text-blue-600"],
+        .user-shell [class*="text-purple-600"],
+        .user-shell [class*="text-emerald-600"] {
+          color: var(--auth-accent) !important;
+        }
+
+        .user-shell [class*="border-indigo-500"],
+        .user-shell [class*="border-purple-500"] {
+          border-color: var(--auth-accent) !important;
+        }
+
+        .user-shell [class*="bg-indigo-100"],
+        .user-shell [class*="bg-blue-100"],
+        .user-shell [class*="bg-purple-100"] {
+          background-color: var(--auth-accent-soft) !important;
+        }
+
+        .user-shell [class*="focus:ring-indigo-500"]:focus,
+        .user-shell [class*="focus:ring-purple-500"]:focus,
+        .user-shell [class*="focus:ring-blue-500"]:focus {
+          --tw-ring-color: rgba(36, 84, 111, 0.45) !important;
+        }
+
+        .user-shell [class*="focus:border-indigo-500"]:focus,
+        .user-shell [class*="focus:border-purple-500"]:focus,
+        .user-shell [class*="focus:border-blue-500"]:focus {
+          border-color: var(--auth-accent) !important;
+        }
+      `}</style>
+
+    <div className="user-shell px-4 py-4 sm:min-h-screen sm:px-6 sm:py-8 lg:px-8">
+      <div className="pointer-events-none absolute -left-24 top-8 z-0 h-72 w-72 rounded-full border border-white/55 bg-white/20 blur-[2px]" aria-hidden="true" />
+      <div className="pointer-events-none absolute -right-20 bottom-10 z-0 h-56 w-56 rounded-full border border-slate-400/20 bg-slate-300/20 blur-[1px]" aria-hidden="true" />
+
+      <div className="relative z-10 mx-auto max-w-[1600px]">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
-          <div className="flex items-center">
-            <button
-              onClick={() => navigate('/admin')}
-              className="mr-4 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            >
-              <ArrowLeftIcon className="w-6 h-6" />
-            </button>
-            <h1 className="text-3xl font-extrabold text-gray-900 flex items-center">
-              <UserGroupIcon className="w-8 h-8 mr-3 text-indigo-600" />
-              User Management
-            </h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <p className="text-lg text-gray-700">
-              Total Users: <span className="font-semibold text-indigo-700">{allUsers.length}</span>
-            </p>
+        <div className="user-fade-up user-surface mb-6 rounded-2xl p-5 sm:p-6" style={{ animationDelay: '60ms' }}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3 sm:items-center">
+              <button
+                onClick={() => navigate('/admin')}
+                className="mt-1 rounded-md border border-slate-300 bg-white p-2 text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 sm:mt-0"
+              >
+                <ArrowLeftIcon className="h-5 w-5" />
+              </button>
+              <div>
+                <p className="inline-flex items-center rounded-full border border-slate-300/80 bg-slate-100/85 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-600">
+                  PRASAD INSTITUTE OF MEDICAL SCIENCES
+                </p>
+                <h1 className="mt-3 text-3xl font-semibold text-slate-900 sm:text-4xl">User Management</h1>
+                <p className="mt-2 text-sm text-slate-600 sm:text-base">
+                  Manage students and admins with cleaner controls and fast bulk actions.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="user-soft-surface rounded-full px-4 py-2 text-sm text-slate-700">
+                Total Users: <span className="font-semibold text-slate-900">{allUsers.length}</span>
+              </div>
+              <div className="user-soft-surface rounded-full px-4 py-2 text-sm text-slate-700">
+                Students: <span className="font-semibold text-slate-900">{students.length}</span>
+              </div>
+              <div className="user-soft-surface rounded-full px-4 py-2 text-sm text-slate-700">
+                Admins: <span className="font-semibold text-slate-900">{admins.length}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="user-fade-up mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3" style={{ animationDelay: '110ms' }}>
           {/* Add User Form */}
-          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+          <div className="user-surface rounded-2xl p-6">
+            <h2 className="mb-5 flex items-center text-2xl font-semibold text-slate-900">
               <UserPlusIcon className="w-6 h-6 mr-3 text-purple-600" />
               Add New User
             </h2>
@@ -342,7 +485,7 @@ function UserManagement({ user }) {
                 <select
                   id="role"
                   name="role"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150"
+                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-700 shadow-sm transition duration-150 focus:ring-purple-500 focus:border-purple-500"
                   value={newUser.role}
                   onChange={handleNewUserChange}
                   required
@@ -360,7 +503,7 @@ function UserManagement({ user }) {
                   id="userName"
                   name="name"
                   placeholder="e.g., John Doe"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150"
+                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-700 shadow-sm transition duration-150 focus:ring-purple-500 focus:border-purple-500"
                   value={newUser.name}
                   onChange={handleNewUserChange}
                   required
@@ -375,7 +518,7 @@ function UserManagement({ user }) {
                   id="userEmail"
                   name="email"
                   placeholder="e.g., john.doe@example.com"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150"
+                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-700 shadow-sm transition duration-150 focus:ring-purple-500 focus:border-purple-500"
                   value={newUser.email}
                   onChange={handleNewUserChange}
                   required
@@ -391,7 +534,7 @@ function UserManagement({ user }) {
                     id="userBatch"
                     name="batch"
                     placeholder="e.g., 2020"
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150"
+                    className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-700 shadow-sm transition duration-150 focus:ring-purple-500 focus:border-purple-500"
                     value={newUser.batch}
                     onChange={handleNewUserChange}
                     required={newUser.role === 'student'}
@@ -400,15 +543,15 @@ function UserManagement({ user }) {
               )}
               <button
                 type="submit"
-                className="w-full flex items-center justify-center px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-lg hover:bg-purple-700 transition duration-300 ease-in-out"
+                className="w-full inline-flex items-center justify-center rounded-md bg-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition duration-300 ease-in-out hover:bg-purple-700"
               >
-                <UserPlusIcon className="w-6 h-6 mr-3" />
+                <UserPlusIcon className="h-5 w-5 mr-2" />
                 Add User
               </button>
             </form>
 
             {/* Bulk Upload Component */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-6 border-t border-slate-200 pt-6">
               <BulkUploadStudents
                 user={user}
                 config={config}
@@ -418,35 +561,35 @@ function UserManagement({ user }) {
           </div>
 
           {/* User Statistics */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg border border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-800 mb-5">User Statistics</h2>
+          <div className="user-surface lg:col-span-2 rounded-2xl p-6">
+            <h2 className="mb-5 text-2xl font-semibold text-slate-900">User Statistics</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+              <div className="user-soft-surface rounded-xl p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-600 mb-1">Total Students</p>
-                    <p className="text-3xl font-bold text-blue-900">{students.length}</p>
+                    <p className="mb-1 text-sm font-medium text-slate-600">Total Students</p>
+                    <p className="text-3xl font-semibold text-slate-900">{students.length}</p>
                   </div>
-                  <AcademicCapIcon className="w-12 h-12 text-blue-500 opacity-50" />
+                  <AcademicCapIcon className="h-10 w-10 text-indigo-600 opacity-50" />
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
+              <div className="user-soft-surface rounded-xl p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-purple-600 mb-1">Total Admins</p>
-                    <p className="text-3xl font-bold text-purple-900">{admins.length}</p>
+                    <p className="mb-1 text-sm font-medium text-slate-600">Total Admins</p>
+                    <p className="text-3xl font-semibold text-slate-900">{admins.length}</p>
                   </div>
-                  <ShieldCheckIcon className="w-12 h-12 text-purple-500 opacity-50" />
+                  <ShieldCheckIcon className="h-10 w-10 text-indigo-600 opacity-50" />
                 </div>
               </div>
               {sortedBatches.length > 0 && (
-                <div className="md:col-span-2 bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
-                  <p className="text-sm font-medium text-green-600 mb-3">Students by Batch</p>
+                <div className="user-soft-surface md:col-span-2 rounded-xl p-6">
+                  <p className="mb-3 text-sm font-medium text-slate-600">Students by Batch</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {sortedBatches.map(batch => (
-                      <div key={batch} className="bg-white/70 p-3 rounded text-center">
-                        <p className="text-xs text-gray-600">Batch {batch}</p>
-                        <p className="text-xl font-bold text-green-900">{usersByBatch[batch].length}</p>
+                      <div key={batch} className="rounded-lg border border-slate-200 bg-white/75 p-3 text-center">
+                        <p className="text-xs text-slate-600">Batch {batch}</p>
+                        <p className="text-xl font-semibold text-slate-900">{usersByBatch[batch].length}</p>
                       </div>
                     ))}
                   </div>
@@ -457,21 +600,21 @@ function UserManagement({ user }) {
         </div>
 
         {/* Users List */}
-        <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+        <div className="user-fade-up user-surface rounded-2xl p-6" style={{ animationDelay: '160ms' }}>
+          <h2 className="mb-5 flex items-center text-2xl font-semibold text-slate-900">
             <UserGroupIcon className="w-6 h-6 mr-3 text-emerald-600" />
             All Users
           </h2>
 
           {isLoadingUsers ? (
-            <div className="text-center py-8 text-indigo-600">Loading users...</div>
+            <div className="py-8 text-center text-slate-600">Loading users...</div>
           ) : allUsers.length === 0 ? (
-            <p className="text-gray-600 text-center py-4">No users found.</p>
+            <p className="py-4 text-center text-slate-600">No users found.</p>
           ) : (
             <div>
               {/* Main Tabs: Students / Admins */}
-              <div className="border-b border-gray-200 mb-6">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+              <div className="mb-6 border-b border-slate-200">
+                <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
                   <button
                     onClick={() => {
                       setActiveTab('students');
@@ -484,7 +627,7 @@ function UserManagement({ user }) {
                       activeTab === 'students'
                         ? "border-indigo-500 text-indigo-600"
                         : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 flex items-center`}
+                    } flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition duration-150`}
                   >
                     <AcademicCapIcon className="w-5 h-5 mr-2" />
                     Students ({students.length})
@@ -499,7 +642,7 @@ function UserManagement({ user }) {
                       activeTab === 'admins'
                         ? "border-indigo-500 text-indigo-600"
                         : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150 flex items-center`}
+                    } flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition duration-150`}
                   >
                     <ShieldCheckIcon className="w-5 h-5 mr-2" />
                     Admins ({admins.length})
@@ -518,7 +661,7 @@ function UserManagement({ user }) {
                     value={userSearchQuery}
                     onChange={handleUserSearchChange}
                     placeholder="Search by name or email"
-                    className="w-full md:w-96 pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full rounded-md border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 shadow-sm md:w-96 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -526,8 +669,8 @@ function UserManagement({ user }) {
               {/* Students View with Batch Tabs */}
               {activeTab === 'students' && sortedBatches.length > 0 && (
                 <div>
-                  <div className="border-b border-gray-200 mb-6">
-                    <nav className="-mb-px flex space-x-8" aria-label="Batch Tabs">
+                  <div className="mb-6 border-b border-slate-200">
+                    <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Batch Tabs">
                       {sortedBatches.map((batch) => (
                         <button
                           key={batch}
@@ -539,7 +682,7 @@ function UserManagement({ user }) {
                             activeBatchTab === batch
                               ? "border-purple-500 text-purple-600"
                               : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                          } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition duration-150`}
+                          } whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition duration-150`}
                         >
                           Batch {batch} ({usersByBatch[batch].length})
                         </button>
@@ -555,9 +698,9 @@ function UserManagement({ user }) {
                   {selectedUserIds.length > 0 && (
                     <button
                       onClick={handleBulkDelete}
-                      className="flex items-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 ease-in-out"
+                      className="inline-flex items-center rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition duration-300 ease-in-out hover:bg-red-100"
                     >
-                      <TrashIcon className="w-5 h-5 mr-2" />
+                      <TrashIcon className="mr-2 h-5 w-5" />
                       Delete Selected ({selectedUserIds.length})
                     </button>
                   )}
@@ -567,10 +710,10 @@ function UserManagement({ user }) {
               {/* Users Table */}
               {filteredCurrentUsers.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="user-table min-w-full divide-y divide-slate-200">
+                    <thead>
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">
                           <input
                             type="checkbox"
                             className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
@@ -578,28 +721,28 @@ function UserManagement({ user }) {
                             onChange={handleSelectAllUsers}
                           />
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">
                           Name
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">
                           Email
                         </th>
                         {activeTab === 'students' && (
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">
                             Batch
                           </th>
                         )}
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">
                           Role
                         </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-600">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="divide-y divide-slate-200 bg-white/85">
                       {filteredCurrentUsers.map((currentUser) => (
-                        <tr key={currentUser._id} className="hover:bg-gray-50">
+                        <tr key={currentUser._id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
                               type="checkbox"
@@ -608,31 +751,31 @@ function UserManagement({ user }) {
                               onChange={() => handleUserCheckboxChange(currentUser._id)}
                             />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                             <div className="flex items-center">
-                              <IdentificationIcon className="w-4 h-4 mr-2 text-gray-500" />
+                              <IdentificationIcon className="mr-2 h-4 w-4 text-slate-500" />
                               <span>{currentUser.name}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                             <div className="flex items-center">
-                              <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-500" />
+                              <EnvelopeIcon className="mr-2 h-4 w-4 text-slate-500" />
                               <span>{currentUser.email}</span>
                             </div>
                           </td>
                           {activeTab === 'students' && (
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                               <div className="flex items-center">
-                                <TagIcon className="w-4 h-4 mr-2 text-gray-500" />
+                                <TagIcon className="mr-2 h-4 w-4 text-slate-500" />
                                 <span>{currentUser.batch}</span>
                               </div>
                             </td>
                           )}
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold leading-5 ${
                               currentUser.role === 'admin' 
-                                ? 'bg-purple-100 text-purple-800' 
-                                : 'bg-blue-100 text-blue-800'
+                                ? 'bg-purple-100 text-slate-800 border border-slate-300' 
+                                : 'bg-blue-100 text-slate-700 border border-slate-300'
                             }`}>
                               {currentUser.role}
                             </span>
@@ -640,7 +783,7 @@ function UserManagement({ user }) {
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
                               onClick={() => openEditModal(currentUser)}
-                              className="text-indigo-600 hover:text-indigo-900 mr-4"
+                              className="mr-4 text-indigo-600 hover:text-indigo-900"
                               title="Edit User"
                             >
                               <PencilSquareIcon className="w-5 h-5 inline" />
@@ -659,7 +802,7 @@ function UserManagement({ user }) {
                   </table>
                 </div>
               ) : (
-                <p className="text-gray-600 text-center py-4">
+                <p className="py-4 text-center text-slate-600">
                   {userSearchQuery.trim()
                     ? (activeTab === 'students' ? 'No matching students found.' : 'No matching admins found.')
                     : (activeTab === 'students' ? 'No students found in this batch.' : 'No admins found.')}
@@ -678,13 +821,13 @@ function UserManagement({ user }) {
           {editingUser && (
             <form onSubmit={handleUpdateUser} className="space-y-4 p-4">
               <div>
-                <label htmlFor="editRole" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="editRole" className="mb-1 block text-sm font-medium text-slate-700">
                   User Role
                 </label>
                 <select
                   id="editRole"
                   name="role"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-700 shadow-sm transition duration-150 focus:ring-blue-500 focus:border-blue-500"
                   value={editFormData.role}
                   onChange={handleEditFormChange}
                   required
@@ -694,28 +837,28 @@ function UserManagement({ user }) {
                 </select>
               </div>
               <div>
-                <label htmlFor="editName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="editName" className="mb-1 block text-sm font-medium text-slate-700">
                   Name
                 </label>
                 <input
                   type="text"
                   name="name"
                   id="editName"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-700 shadow-sm transition duration-150 focus:ring-blue-500 focus:border-blue-500"
                   value={editFormData.name}
                   onChange={handleEditFormChange}
                   required
                 />
               </div>
               <div>
-                <label htmlFor="editEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="editEmail" className="mb-1 block text-sm font-medium text-slate-700">
                   Email
                 </label>
                 <input
                   type="email"
                   name="email"
                   id="editEmail"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-700 shadow-sm transition duration-150 focus:ring-blue-500 focus:border-blue-500"
                   value={editFormData.email}
                   onChange={handleEditFormChange}
                   required
@@ -723,14 +866,14 @@ function UserManagement({ user }) {
               </div>
               {editFormData.role === 'student' && (
                 <div>
-                  <label htmlFor="editBatch" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="editBatch" className="mb-1 block text-sm font-medium text-slate-700">
                     Batch Year
                   </label>
                   <input
                     type="text"
                     name="batch"
                     id="editBatch"
-                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                    className="w-full rounded-md border border-slate-300 bg-white p-3 text-sm text-slate-700 shadow-sm transition duration-150 focus:ring-blue-500 focus:border-blue-500"
                     value={editFormData.batch}
                     onChange={handleEditFormChange}
                     required={editFormData.role === 'student'}
@@ -739,9 +882,9 @@ function UserManagement({ user }) {
               )}
               <button
                 type="submit"
-                className="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition duration-300 ease-in-out mt-6"
+                className="mt-6 inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition duration-300 ease-in-out hover:bg-blue-700"
               >
-                <PencilSquareIcon className="w-5 h-5 mr-2" />
+                <PencilSquareIcon className="mr-2 h-5 w-5" />
                 Save Changes
               </button>
             </form>
@@ -759,6 +902,7 @@ function UserManagement({ user }) {
         />
       </div>
     </div>
+    </>
   );
 }
 

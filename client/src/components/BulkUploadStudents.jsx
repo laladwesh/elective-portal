@@ -76,12 +76,12 @@ function BulkUploadStudents({ user, config, onUploadSuccess }) {
     }, []);
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
-                <CloudArrowUpIcon className="w-6 h-6 mr-3 text-blue-600" />
+        <div className="rounded-xl border border-slate-200 bg-white/70 p-5">
+            <h2 className="mb-4 flex items-center text-xl font-semibold text-slate-900">
+                <CloudArrowUpIcon className="mr-2 h-5 w-5 text-indigo-600" />
                 Bulk Upload Students
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="mb-4 text-sm text-slate-600">
                 Upload student data using an Excel file. The file must contain 'Name', 'Email', and 'Batch' columns.
             </p>
             <div className="flex flex-col space-y-4">
@@ -89,27 +89,26 @@ function BulkUploadStudents({ user, config, onUploadSuccess }) {
                     type="file"
                     accept=".xlsx, .xls"
                     onChange={handleFileChange}
-                    className="block w-full text-sm text-gray-500
-                               file:mr-4 file:py-2 file:px-4
-                               file:rounded-full file:border-0
-                               file:text-sm file:font-semibold
-                               file:bg-blue-50 file:text-blue-700
-                               hover:file:bg-blue-100"
+                    className="block w-full text-sm text-slate-600
+                               file:mr-3 file:rounded-md file:border file:border-slate-300
+                               file:bg-white file:px-3 file:py-2
+                               file:text-sm file:font-medium file:text-slate-700
+                               hover:file:bg-slate-50"
                 />
                 <button
                     onClick={handleUpload}
                     disabled={!selectedFile || isUploading}
-                    className={`w-full flex items-center justify-center px-6 py-3 font-semibold rounded-lg shadow-lg transition duration-300 ease-in-out
-                                ${!selectedFile || isUploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    className={`w-full inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold shadow-sm transition duration-300 ease-in-out
+                                ${!selectedFile || isUploading ? 'cursor-not-allowed bg-slate-300 text-slate-600' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                 >
-                    <CloudArrowUpIcon className="w-5 h-5 mr-2" />
+                    <CloudArrowUpIcon className="mr-2 h-5 w-5" />
                     {isUploading ? 'Uploading...' : 'Upload Students'}
                 </button>
                 <button
                     onClick={handleDownloadTemplate}
-                    className="w-full flex items-center justify-center px-6 py-3 bg-indigo-100 text-indigo-700 font-semibold rounded-lg shadow-lg hover:bg-indigo-200 transition duration-300 ease-in-out"
+                    className="w-full inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition duration-300 ease-in-out hover:bg-slate-50"
                 >
-                    <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
+                    <DocumentArrowDownIcon className="mr-2 h-5 w-5" />
                     Download Template
                 </button>
             </div>

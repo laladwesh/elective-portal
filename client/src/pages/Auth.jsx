@@ -34,7 +34,7 @@ const handleGoogleLoginClick = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Spectral:ital,wght@0,600;0,700;1,600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 
         :root {
           --auth-bg: #efeee9;
@@ -97,7 +97,7 @@ const handleGoogleLoginClick = () => {
               <div className="mb-5">
                 <p
                   className="inline-flex items-center rounded-full border border-slate-300/80 bg-slate-100/80 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-600"
-                  style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   PRASAD INSTITUTE OF MEDICAL SCIENCES
                 </p>
@@ -105,14 +105,14 @@ const handleGoogleLoginClick = () => {
 
               <h1
                 className="max-w-2xl text-4xl leading-[1.05] text-[var(--auth-ink)] sm:text-5xl lg:text-[3.35rem]"
-                style={{ fontFamily: 'Spectral, serif' }}
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
               >
                 A quieter, cleaner way to choose your electives.
               </h1>
 
               <p
                 className="mt-5 max-w-xl text-[15px] leading-relaxed text-[var(--auth-muted)] sm:text-base"
-                style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
               >
                 Course windows, seat availability, and enrollment timing stay structured in one place so you can focus on the actual choice.
               </p>
@@ -120,7 +120,7 @@ const handleGoogleLoginClick = () => {
               <div className="mt-8 max-w-lg rounded-2xl border border-slate-200/80 bg-white/60 px-5 py-4">
                 <p
                   className="text-sm leading-relaxed text-slate-600"
-                  style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   Designed for a calm workflow with secure institute authentication and straightforward elective access.
                 </p>
@@ -134,25 +134,25 @@ const handleGoogleLoginClick = () => {
               <div className="mb-6 sm:mb-8">
                 <p
                   className="mb-3 inline-flex items-center rounded-full border border-slate-300/80 bg-slate-100/80 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-600 lg:hidden"
-                  style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   PRASAD INSTITUTE OF MEDICAL SCIENCES
                 </p>
                 <p
                   className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500"
-                  style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   Sign In
                 </p>
                 <h2
                   className="mt-3 text-3xl leading-tight text-[var(--auth-ink)]"
-                  style={{ fontFamily: 'Spectral, serif' }}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   Welcome to Prasad Institute of Medical Sciences
                 </h2>
                 <p
                   className="mt-2 text-sm leading-relaxed text-[var(--auth-muted)]"
-                  style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                  style={{ fontFamily: 'Montserrat, sans-serif' }}
                 >
                   Use your approved institute Google account to continue.
                 </p>
@@ -161,7 +161,7 @@ const handleGoogleLoginClick = () => {
               <button
                 onClick={handleGoogleLoginClick}
                 className="group relative flex w-full items-center justify-center rounded-xl border border-slate-900/5 bg-[var(--auth-accent)] px-4 py-3.5 text-base font-semibold text-[var(--auth-button-ink)] shadow-[0_10px_24px_rgba(36,84,111,0.25)] transition-all duration-300 hover:-translate-y-[1px] hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-[var(--auth-accent)]/45"
-                style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
               >
                 <span className="mr-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/92">
                   <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google logo" className="h-5 w-5" />
@@ -169,7 +169,7 @@ const handleGoogleLoginClick = () => {
                 Continue with Institute Gmail
               </button>
 
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 Login is restricted to users pre-approved by the administration panel.
               </div>
             </section>
