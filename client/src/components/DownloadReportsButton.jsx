@@ -1,18 +1,14 @@
-import React, { useCallback } from 'react';
-import axios from 'axios';
+import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { ArrowDownTrayIcon, DocumentTextIcon, TableCellsIcon } from '@heroicons/react/24/solid'; // Icons for download, PDF, Excel
+import { DocumentTextIcon, TableCellsIcon, FunnelIcon } from '@heroicons/react/24/solid';
 import { courseAPI } from '../services/apiService';
 
 // PDF Libraries
-import { Document, Page, Text, View, StyleSheet, Font, pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 
 // Excel Libraries
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-
-// Register a font if you want custom fonts in your PDF
-// Font.register({ family: 'Inter', src: 'https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.ttf' });
 
 // Create styles for the PDF document
 const styles = StyleSheet.create({
@@ -61,7 +57,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     tableColHeader: {
-        width: '33.33%',
+        width: '25%',
         borderStyle: 'solid',
         borderBottomWidth: 1,
         borderColor: '#bfbfbf',
@@ -69,7 +65,7 @@ const styles = StyleSheet.create({
         padding: 5,
     },
     tableCol: {
-        width: '33.33%',
+        width: '25%',
         borderStyle: 'solid',
         borderBottomWidth: 1,
         borderColor: '#bfbfbf',
@@ -92,53 +88,69 @@ const styles = StyleSheet.create({
     }
 });
 
+const formatCourseBatchWithBlock = (batch, block) => {
+    if (!batch && !block) return 'N/A';
+    return `${batch || 'N/A'} - ${block || 'N/A'}`;
+};
+
 /**
  * PDF Document Component
  * This component defines the structure and content of the PDF report.
  */
-const EnrolledStudentsPDF = ({ data }) => (
+const EnrolledStudentsPDF = ({ sections, selectedBatch }) => (
     <Document>
         <Page size="A4" style={styles.page}>
             <Text style={styles.header}>Enrolled Students Report</Text>
+            <Text style={styles.subheader}>Batch Filter: {selectedBatch === 'all' ? 'All Batch Years' : selectedBatch}</Text>
             <Text style={styles.subheader}>Generated on: {new Date().toLocaleString()}</Text>
 
-            {Object.keys(data).length === 0 ? (
+            {sections.length === 0 ? (
                 <Text style={styles.noData}>No enrollment data available.</Text>
             ) : (
-                Object.keys(data).sort().map(courseName => (
-                    Object.keys(data[courseName]).sort().map(batch => (
-                        <View key={`${courseName}-${batch}`} style={styles.section} break>
-                            <Text style={styles.sectionTitle}>Course: {courseName} (Batch: {batch})</Text>
-                            <View style={styles.table}>
-                                <View style={styles.tableRow}>
-                                    <View style={styles.tableColHeader}>
-                                        <Text style={styles.tableCellHeader}>Name</Text>
+                sections.map((section) => (
+                    <View key={section.key} style={styles.section} break>
+                        <Text style={styles.sectionTitle}>Course: {section.courseName}</Text>
+                        <Text style={styles.tableCell}>Batch Year: {section.batch}</Text>
+                        <Text style={styles.tableCell}>Block: {section.block || 'N/A'}</Text>
+                        <Text style={styles.tableCell}>Department: {section.department || 'N/A'}</Text>
+                        <Text style={styles.tableCell}>Professor: {section.professorName || 'N/A'}</Text>
+                        <View style={styles.table}>
+                            <View style={styles.tableRow}>
+                                <View style={styles.tableColHeader}>
+                                    <Text style={styles.tableCellHeader}>Name</Text>
+                                </View>
+                                <View style={styles.tableColHeader}>
+                                    <Text style={styles.tableCellHeader}>Email</Text>
+                                </View>
+                                <View style={styles.tableColHeader}>
+                                    <Text style={styles.tableCellHeader}>Course Batch / Block</Text>
+                                </View>
+                                <View style={styles.tableColHeader}>
+                                    <Text style={styles.tableCellHeader}>Enrollment Date</Text>
+                                </View>
+                            </View>
+                            {section.enrollments.map((enrollment, index) => (
+                                <View style={styles.tableRow} key={enrollment._id || index}>
+                                    <View style={styles.tableCol}>
+                                        <Text style={styles.tableCell}>{enrollment.student?.name || 'N/A'}</Text>
                                     </View>
-                                    <View style={styles.tableColHeader}>
-                                        <Text style={styles.tableCellHeader}>Email</Text>
+                                    <View style={styles.tableCol}>
+                                        <Text style={styles.tableCell}>{enrollment.student?.email || 'N/A'}</Text>
                                     </View>
-                                    <View style={styles.tableColHeader}>
-                                        <Text style={styles.tableCellHeader}>Enrollment Date</Text>
+                                    <View style={styles.tableCol}>
+                                        <Text style={styles.tableCell}>
+                                            {formatCourseBatchWithBlock(enrollment.course?.batch, enrollment.course?.block)}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.tableCol}>
+                                        <Text style={styles.tableCell}>
+                                            {new Date(enrollment.enrollmentDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
+                                        </Text>
                                     </View>
                                 </View>
-                                {data[courseName][batch].map((enrollment, index) => (
-                                    <View style={styles.tableRow} key={enrollment._id || index}>
-                                        <View style={styles.tableCol}>
-                                            <Text style={styles.tableCell}>{enrollment.student?.name || 'N/A'}</Text>
-                                        </View>
-                                        <View style={styles.tableCol}>
-                                            <Text style={styles.tableCell}>{enrollment.student?.email || 'N/A'}</Text>
-                                        </View>
-                                        <View style={styles.tableCol}>
-                                            <Text style={styles.tableCell}>
-                                                {new Date(enrollment.enrollmentDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                ))}
-                            </View>
+                            ))}
                         </View>
-                    ))
+                    </View>
                 ))
             )}
         </Page>
@@ -156,6 +168,23 @@ const EnrolledStudentsPDF = ({ data }) => (
  * @param {function} props.config - Memoized Axios config for authenticated requests.
  */
 function DownloadReportsButton({ user, config }) {
+    const [availableBatches, setAvailableBatches] = useState([]);
+    const [selectedBatch, setSelectedBatch] = useState('all');
+
+    const fetchBatches = useCallback(async () => {
+        try {
+            const res = await courseAPI.getBatches(config());
+            setAvailableBatches(res.data || []);
+        } catch (error) {
+            console.error('Failed to fetch batches for reports:', error.response?.data || error);
+        }
+    }, [config]);
+
+    useEffect(() => {
+        if (user?.token) {
+            fetchBatches();
+        }
+    }, [user?.token, fetchBatches]);
 
     // Function to fetch all enrollments with student and course details
     const fetchAllEnrollments = useCallback(async () => {
@@ -174,22 +203,40 @@ function DownloadReportsButton({ user, config }) {
         }
     }, [config]);
 
-    // Helper to group enrollments by Course and then by Batch
+    // Helper to group enrollments by course metadata
     const groupEnrollments = (enrollments) => {
         const grouped = {};
         enrollments.forEach(enrollment => {
-            const courseName = enrollment.course?.courseName || 'Unknown Course';
-            const batch = enrollment.course?.batch || 'Unknown Batch';
+            const course = enrollment.course || {};
+            const courseKey = course._id
+                ? String(course._id)
+                : `${course.courseName || 'Unknown Course'}__${course.batch || 'Unknown Batch'}`;
 
-            if (!grouped[courseName]) {
-                grouped[courseName] = {};
+            if (!grouped[courseKey]) {
+                grouped[courseKey] = {
+                    key: courseKey,
+                    courseName: course.courseName || 'Unknown Course',
+                    batch: course.batch || 'Unknown Batch',
+                    block: course.block || 'N/A',
+                    department: course.department || 'N/A',
+                    professorName: course.professorName || 'N/A',
+                    enrollments: [],
+                };
             }
-            if (!grouped[courseName][batch]) {
-                grouped[courseName][batch] = [];
-            }
-            grouped[courseName][batch].push(enrollment);
+
+            grouped[courseKey].enrollments.push(enrollment);
         });
-        return grouped;
+
+        return Object.values(grouped).sort((a, b) => {
+            if (a.courseName !== b.courseName) return a.courseName.localeCompare(b.courseName);
+            if (a.batch !== b.batch) return a.batch.localeCompare(b.batch);
+            return (a.block || '').localeCompare(b.block || '');
+        });
+    };
+
+    const filterBySelectedBatch = (enrollments) => {
+        if (selectedBatch === 'all') return enrollments;
+        return enrollments.filter((enrollment) => enrollment.course?.batch === selectedBatch);
     };
 
     // --- PDF Report Generation ---
@@ -202,12 +249,19 @@ function DownloadReportsButton({ user, config }) {
             return;
         }
 
-        const groupedData = groupEnrollments(enrollments);
+        const filteredEnrollments = filterBySelectedBatch(enrollments);
+        if (filteredEnrollments.length === 0) {
+            toast.error('No enrollment data found for the selected batch.', { id: 'pdfReportToast' });
+            return;
+        }
+
+        const groupedData = groupEnrollments(filteredEnrollments);
 
         try {
             // Generate the PDF document as a Blob
-            const blob = await pdf(<EnrolledStudentsPDF data={groupedData} />).toBlob();
-            saveAs(blob, `Enrolled_Students_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+            const blob = await pdf(<EnrolledStudentsPDF sections={groupedData} selectedBatch={selectedBatch} />).toBlob();
+            const batchSuffix = selectedBatch === 'all' ? 'all_batches' : `batch_${selectedBatch}`;
+            saveAs(blob, `Enrolled_Students_Report_${batchSuffix}_${new Date().toISOString().slice(0, 10)}.pdf`);
             toast.success("PDF report generated and downloaded!", { id: "pdfReportToast" });
         } catch (error) {
             toast.error("Failed to generate PDF report.", { id: "pdfReportToast" });
@@ -225,38 +279,33 @@ function DownloadReportsButton({ user, config }) {
             return;
         }
 
-        const groupedData = groupEnrollments(enrollments);
-        const workbook = XLSX.utils.book_new();
-
-        for (const courseName in groupedData) {
-            for (const batch in groupedData[courseName]) {
-                const studentsInBatch = groupedData[courseName][batch];
-
-                // Create a sheet for each Course-Batch combination
-                const sheetName = `${courseName.substring(0, 15)} - ${batch}`; // Limit sheet name length
-                const sheetData = [
-                    ["Student Name", "Student Email", "Course Name", "Batch", "Enrollment Date"], // Headers
-                ];
-
-                studentsInBatch.forEach(enrollment => {
-                    sheetData.push([
-                        enrollment.student?.name || 'N/A',
-                        enrollment.student?.email || 'N/A',
-                        enrollment.course?.courseName || 'N/A',
-                        enrollment.course?.batch || 'N/A',
-                        new Date(enrollment.enrollmentDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })
-                    ]);
-                });
-
-                const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-            }
+        const filteredEnrollments = filterBySelectedBatch(enrollments);
+        if (filteredEnrollments.length === 0) {
+            toast.error('No enrollment data found for the selected batch.', { id: 'excelReportToast' });
+            return;
         }
+
+        const workbook = XLSX.utils.book_new();
+        const rows = filteredEnrollments.map((enrollment) => ({
+            "Student Name": enrollment.student?.name || 'N/A',
+            "Student Email": enrollment.student?.email || 'N/A',
+            "Student Batch Year": enrollment.student?.batch || 'N/A',
+            "Course Name": enrollment.course?.courseName || 'N/A',
+            "Course Batch Year": enrollment.course?.batch || 'N/A',
+            "Course Block": enrollment.course?.block || 'N/A',
+            "Department": enrollment.course?.department || 'N/A',
+            "Professor Name": enrollment.course?.professorName || 'N/A',
+            "Enrollment Date (IST)": new Date(enrollment.enrollmentDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }),
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Enrollments');
 
         try {
             const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
             const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-            saveAs(data, `Enrolled_Students_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            const batchSuffix = selectedBatch === 'all' ? 'all_batches' : `batch_${selectedBatch}`;
+            saveAs(data, `Enrolled_Students_Report_${batchSuffix}_${new Date().toISOString().slice(0, 10)}.xlsx`);
             toast.success("Excel report generated and downloaded!", { id: "excelReportToast" });
         } catch (error) {
             toast.error("Failed to generate Excel report.", { id: "excelReportToast" });
@@ -265,7 +314,20 @@ function DownloadReportsButton({ user, config }) {
     };
 
     return (
-        <div className="flex space-x-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative">
+                <FunnelIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <select
+                    value={selectedBatch}
+                    onChange={(e) => setSelectedBatch(e.target.value)}
+                    className="pl-9 pr-8 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                    <option value="all">All Batch Years</option>
+                    {availableBatches.map((batch) => (
+                        <option key={batch} value={batch}>Batch {batch}</option>
+                    ))}
+                </select>
+            </div>
             <button
                 onClick={handleDownloadPdf}
                 className="flex items-center px-4 py-2 bg-purple-600 text-white font-medium rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out"
