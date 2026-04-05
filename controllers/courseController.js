@@ -10,6 +10,21 @@ const User = require('../models/User');
 const autoActivateCourses = async () => {
   try {
     const currentTimeUTC = new Date(); // Current time in UTC
+
+    // Self-heal inconsistent data where enrollment is marked active but open time is still in the future.
+    const normalizeResult = await Course.updateMany(
+      {
+        isEnrollmentActive: true,
+        enrollmentOpenTime: { $ne: null, $gt: currentTimeUTC },
+      },
+      {
+        $set: { enrollmentOpenTime: currentTimeUTC },
+      }
+    );
+
+    if (normalizeResult.modifiedCount > 0) {
+      console.log(`✓ Normalized ${normalizeResult.modifiedCount} active course(s) with future open time`);
+    }
     
     // Find courses that:
     // 1. Have an enrollmentOpenTime set
@@ -29,34 +44,111 @@ const autoActivateCourses = async () => {
       console.log(`✓ Auto-activated ${result.modifiedCount} courses based on enrollment open time`);
     }
     
-    return result.modifiedCount;
+    return result.modifiedCount + normalizeResult.modifiedCount;
   } catch (error) {
     console.error('Error in autoActivateCourses:', error);
     return 0;
   }
 };
 
+// Resolves enrollment state consistently for create/update flows.
+// If admin explicitly activates now, activation is immediate and open time is set to "now".
+const resolveEnrollmentState = ({ enrollmentOpenTime, isEnrollmentActive }, res, currentState = {}) => {
+  const hasOpenTimeInput = typeof enrollmentOpenTime !== 'undefined';
+  const hasActiveInput = typeof isEnrollmentActive === 'boolean';
+
+  if (!hasOpenTimeInput && !hasActiveInput) {
+    return {
+      openTimeUTC: currentState.enrollmentOpenTime ?? null,
+      finalIsEnrollmentActive: currentState.isEnrollmentActive ?? false,
+    };
+  }
+
+  const currentTimeUTC = new Date();
+
+  if (isEnrollmentActive === true) {
+    return {
+      openTimeUTC: currentTimeUTC,
+      finalIsEnrollmentActive: true,
+    };
+  }
+
+  if (isEnrollmentActive === false && !hasOpenTimeInput) {
+    return {
+      openTimeUTC: null,
+      finalIsEnrollmentActive: false,
+    };
+  }
+
+  const effectiveOpenTime = hasOpenTimeInput ? enrollmentOpenTime : currentState.enrollmentOpenTime;
+
+  if (!effectiveOpenTime) {
+    return {
+      openTimeUTC: null,
+      finalIsEnrollmentActive: false,
+    };
+  }
+
+  const parsedOpenTimeUTC = new Date(effectiveOpenTime);
+  if (Number.isNaN(parsedOpenTimeUTC.getTime())) {
+    res.status(400);
+    throw new Error('Invalid enrollment open time format.');
+  }
+
+  return {
+    openTimeUTC: parsedOpenTimeUTC,
+    finalIsEnrollmentActive: parsedOpenTimeUTC <= currentTimeUTC,
+  };
+};
+
+const VALID_BLOCKS = ['Block 1', 'Block 2'];
+
+const normalizeCourseBlock = (rawBlock) => {
+  if (typeof rawBlock !== 'string') {
+    return null;
+  }
+
+  const normalized = rawBlock.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (normalized === '1' || normalized === 'block1' || normalized === 'block 1') {
+    return 'Block 1';
+  }
+  if (normalized === '2' || normalized === 'block2' || normalized === 'block 2') {
+    return 'Block 2';
+  }
+
+  return null;
+};
+
 // @desc    Admin adds a new single course
 // @route   POST /api/courses
 // @access  Private/Admin
 const addCourse = asyncHandler(async (req, res) => {
-  const { courseName, batch, intakeCapacity } = req.body;
+  const { courseName, batch, block, intakeCapacity, department, professorName } = req.body;
 
-  if (!courseName || !batch || !intakeCapacity) {
+  if (!courseName || !batch || !block || !intakeCapacity || !department || !professorName) {
     res.status(400);
-    throw new Error('Please fill all required fields: Course Name, Batch, Intake Capacity.');
+    throw new Error('Please fill all required fields: Course Name, Batch, Block, Intake Capacity, Department, Professor Name.');
   }
 
-  const courseExists = await Course.findOne({ courseName, batch });
+  const normalizedBlock = normalizeCourseBlock(block);
+  if (!normalizedBlock) {
+    res.status(400);
+    throw new Error(`Invalid block. Allowed values are: ${VALID_BLOCKS.join(', ')}.`);
+  }
+
+  const courseExists = await Course.findOne({ courseName, batch, block: normalizedBlock });
   if (courseExists) {
     res.status(400);
-    throw new Error('Course with this name and batch already exists.');
+    throw new Error('Course with this name, batch, and block already exists.');
   }
 
   const course = await Course.create({
     courseName,
     batch,
+    block: normalizedBlock,
     intakeCapacity,
+    department,
+    professorName,
     enrolledStudentsCount: 0, // Initialize to 0 for new courses
   });
 
@@ -67,71 +159,58 @@ const addCourse = asyncHandler(async (req, res) => {
 // @route   POST /api/courses/batch-courses
 // @access  Private/Admin
 const createBatchCourses = asyncHandler(async (req, res) => {
-  const { batch, enrollmentOpenTime, isEnrollmentActive, courses } = req.body;
+  const { batch, block, enrollmentOpenTime, isEnrollmentActive, courses } = req.body;
 
-  if (!batch || typeof isEnrollmentActive === 'undefined' || !courses || !Array.isArray(courses) || courses.length === 0) {
+  if (!batch || !block || typeof isEnrollmentActive === 'undefined' || !courses || !Array.isArray(courses) || courses.length === 0) {
     res.status(400);
-    throw new Error('Please provide batch, active status, and a list of courses.');
+    throw new Error('Please provide batch, block, active status, and a list of courses.');
   }
 
-  // Validate individual courses data and check for duplicates within the batch
+  const normalizedBlock = normalizeCourseBlock(block);
+  if (!normalizedBlock) {
+    res.status(400);
+    throw new Error(`Invalid block. Allowed values are: ${VALID_BLOCKS.join(', ')}.`);
+  }
+
+  // Validate individual courses data and check for duplicates within the same batch + block
   const courseNamesInBatch = new Set();
   for (const courseData of courses) {
-    if (!courseData.courseName || !courseData.intakeCapacity || courseData.intakeCapacity < 1) {
+    if (
+      !courseData.courseName
+      || !courseData.intakeCapacity
+      || courseData.intakeCapacity < 1
+      || !courseData.department
+      || !courseData.professorName
+    ) {
       res.status(400);
-      throw new Error('Each course must have a name and a valid intake capacity (min 1).');
+      throw new Error('Each course must have a name, department, professor name, and a valid intake capacity (min 1).');
     }
     if (courseNamesInBatch.has(courseData.courseName)) {
         res.status(400);
-        throw new Error(`Duplicate course name "${courseData.courseName}" found in the list for this batch.`);
+        throw new Error(`Duplicate course name "${courseData.courseName}" found in the list for batch "${batch}" and ${normalizedBlock}.`);
     }
     courseNamesInBatch.add(courseData.courseName);
 
-    // Also check against existing courses in DB for this batch
-    const existingCourse = await Course.findOne({ courseName: courseData.courseName, batch: batch });
+      // Also check against existing courses in DB for this batch + block
+      const existingCourse = await Course.findOne({ courseName: courseData.courseName, batch, block: normalizedBlock });
     if (existingCourse) {
         res.status(400);
-        throw new new Error(`Course "${courseData.courseName}" already exists for batch "${batch}".`);
+        throw new Error(`Course "${courseData.courseName}" already exists for batch "${batch}" and ${normalizedBlock}.`);
     }
   }
 
-  // ========================================
-  // ENROLLMENT ACTIVATION LOGIC (IST-aware)
-  // ========================================
-  let openTimeUTC;
-  let finalIsEnrollmentActive = isEnrollmentActive;
-
-  if (isEnrollmentActive) {
-    // Checkbox is CHECKED: Activate NOW
-    openTimeUTC = new Date(); // Set to current time (UTC)
-    finalIsEnrollmentActive = true;
-  } else {
-    // Checkbox is NOT CHECKED: Use provided time or null
-    if (enrollmentOpenTime) {
-      // Frontend sends datetime-local value which is already in IST format
-      // Convert it to UTC Date object
-      openTimeUTC = new Date(enrollmentOpenTime);
-      
-      // Check if the open time is in the past
-      const currentTimeUTC = new Date();
-      if (openTimeUTC <= currentTimeUTC) {
-        // If open time is in the past, activate immediately
-        finalIsEnrollmentActive = true;
-      } else {
-        // If open time is in the future, keep inactive
-        finalIsEnrollmentActive = false;
-      }
-    } else {
-      // No open time provided and not active
-      openTimeUTC = null;
-      finalIsEnrollmentActive = false;
-    }
-  }
+  const { openTimeUTC, finalIsEnrollmentActive } = resolveEnrollmentState(
+    { enrollmentOpenTime, isEnrollmentActive },
+    res
+  );
 
   const newCourses = courses.map(courseData => ({
     courseName: courseData.courseName,
     batch, // Apply the same batch to all courses in this bunch
+    block: normalizedBlock,
     intakeCapacity: courseData.intakeCapacity,
+    department: courseData.department,
+    professorName: courseData.professorName,
     enrolledStudentsCount: 0, // Initialize to 0
     enrollmentOpenTime: openTimeUTC,
     isEnrollmentActive: finalIsEnrollmentActive,
@@ -140,7 +219,7 @@ const createBatchCourses = asyncHandler(async (req, res) => {
   const createdCourses = await Course.insertMany(newCourses);
 
   res.status(201).json({
-    message: `${createdCourses.length} courses created successfully for batch ${batch}!`,
+    message: `${createdCourses.length} courses created successfully for batch ${batch}, ${normalizedBlock}!`,
     courses: createdCourses,
   });
 });
@@ -173,7 +252,16 @@ const getCourses = asyncHandler(async (req, res) => {
 // @route   PUT /api/courses/:id
 // @access  Private/Admin
 const updateCourse = asyncHandler(async (req, res) => {
-  const { courseName, batch, intakeCapacity, enrollmentOpenTime, isEnrollmentActive } = req.body;
+  const {
+    courseName,
+    batch,
+    block,
+    intakeCapacity,
+    department,
+    professorName,
+    enrollmentOpenTime,
+    isEnrollmentActive,
+  } = req.body;
 
   const course = await Course.findById(req.params.id);
 
@@ -185,14 +273,34 @@ const updateCourse = asyncHandler(async (req, res) => {
   course.courseName = courseName || course.courseName;
   course.batch = batch || course.batch;
   course.intakeCapacity = intakeCapacity || course.intakeCapacity;
-  
-  if (enrollmentOpenTime) {
-    course.enrollmentOpenTime = new Date(enrollmentOpenTime); // Ensure it's a Date object
-  } else if (enrollmentOpenTime === null) { // Allow clearing the time
-    course.enrollmentOpenTime = null;
+  if (typeof block !== 'undefined') {
+    const normalizedBlock = normalizeCourseBlock(block);
+    if (!normalizedBlock) {
+      res.status(400);
+      throw new Error(`Invalid block. Allowed values are: ${VALID_BLOCKS.join(', ')}.`);
+    }
+    course.block = normalizedBlock;
   }
+  if (typeof department !== 'undefined') {
+    course.department = department;
+  }
+  if (typeof professorName !== 'undefined') {
+    course.professorName = professorName;
+  }
+  
+  if (typeof enrollmentOpenTime !== 'undefined' || typeof isEnrollmentActive === 'boolean') {
+    const { openTimeUTC, finalIsEnrollmentActive } = resolveEnrollmentState(
+      { enrollmentOpenTime, isEnrollmentActive },
+      res,
+      {
+        enrollmentOpenTime: course.enrollmentOpenTime,
+        isEnrollmentActive: course.isEnrollmentActive,
+      }
+    );
 
-  course.isEnrollmentActive = typeof isEnrollmentActive === 'boolean' ? isEnrollmentActive : course.isEnrollmentActive;
+    course.enrollmentOpenTime = openTimeUTC;
+    course.isEnrollmentActive = finalIsEnrollmentActive;
+  }
 
   const updatedCourse = await course.save();
   res.status(200).json(updatedCourse);
@@ -291,6 +399,60 @@ const closeBatchEnrollment = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Set enrollment settings (time + active) for all courses in a specific batch
+// @route   PUT /api/courses/set-batch-enrollment
+// @access  Private/Admin
+const setBatchEnrollmentSettings = asyncHandler(async (req, res) => {
+  const { batch, block, enrollmentOpenTime, isEnrollmentActive } = req.body;
+
+  if (!batch || !block) {
+    res.status(400);
+    throw new Error('Please provide both batch and block.');
+  }
+
+  const normalizedBlock = normalizeCourseBlock(block);
+  if (!normalizedBlock) {
+    res.status(400);
+    throw new Error(`Invalid block. Allowed values are: ${VALID_BLOCKS.join(', ')}.`);
+  }
+
+  if (typeof enrollmentOpenTime === 'undefined' && typeof isEnrollmentActive === 'undefined') {
+    res.status(400);
+    throw new Error('Please provide enrollment settings to update.');
+  }
+
+  const totalCourses = await Course.countDocuments({ batch, block: normalizedBlock });
+  if (totalCourses === 0) {
+    res.status(404);
+    throw new Error(`No courses found for batch "${batch}", ${normalizedBlock}.`);
+  }
+
+  const { openTimeUTC, finalIsEnrollmentActive } = resolveEnrollmentState(
+    { enrollmentOpenTime, isEnrollmentActive },
+    res
+  );
+
+  const result = await Course.updateMany(
+    { batch, block: normalizedBlock },
+    {
+      $set: {
+        enrollmentOpenTime: openTimeUTC,
+        isEnrollmentActive: finalIsEnrollmentActive,
+      },
+    }
+  );
+
+  res.status(200).json({
+    message: `Updated enrollment settings for batch "${batch}", ${normalizedBlock}.`,
+    batch,
+    block: normalizedBlock,
+    totalCourses,
+    modifiedCount: result.modifiedCount,
+    enrollmentOpenTime: openTimeUTC,
+    isEnrollmentActive: finalIsEnrollmentActive,
+  });
+});
+
 
 // @desc    Set/Update enrollment opening time and activate/deactivate enrollment
 // @route   PUT /api/courses/:id/set-enrollment-time
@@ -307,14 +469,17 @@ const setEnrollmentTime = asyncHandler(async (req, res) => {
     throw new Error('Course not found');
   }
 
-  if (enrollmentOpenTime) {
-    course.enrollmentOpenTime = new Date(enrollmentOpenTime);
-  } else if (enrollmentOpenTime === null) { // Allows admin to clear the time
-    course.enrollmentOpenTime = null;
-  }
-  if (typeof isEnrollmentActive === 'boolean') {
-    course.isEnrollmentActive = isEnrollmentActive;
-  }
+  const { openTimeUTC, finalIsEnrollmentActive } = resolveEnrollmentState(
+    { enrollmentOpenTime, isEnrollmentActive },
+    res,
+    {
+      enrollmentOpenTime: course.enrollmentOpenTime,
+      isEnrollmentActive: course.isEnrollmentActive,
+    }
+  );
+
+  course.enrollmentOpenTime = openTimeUTC;
+  course.isEnrollmentActive = finalIsEnrollmentActive;
 
   const updatedCourse = await course.save();
   res.status(200).json(updatedCourse);
@@ -440,7 +605,7 @@ const getCourseEnrollments = asyncHandler(async (req, res) => {
 // @access  Private/Student
 const getMyEnrollments = asyncHandler(async (req, res) => {
   const studentId = req.user._id;
-  const enrollments = await Enrollment.find({ student: studentId }).populate('course', 'courseName batch intakeCapacity');
+  const enrollments = await Enrollment.find({ student: studentId }).populate('course', 'courseName batch block intakeCapacity department professorName');
 
   res.status(200).json(enrollments);
 });
@@ -458,7 +623,7 @@ const clearAllCourses = asyncHandler(async (req, res) => {
 const getAllEnrollmentsWithDetails = asyncHandler(async (req, res) => {
   const enrollments = await Enrollment.find({})
     .populate('student', 'name email batch') // Populate student details
-    .populate('course', 'courseName batch intakeCapacity'); // Populate course details
+    .populate('course', 'courseName batch block intakeCapacity department professorName'); // Populate course details
 
   res.status(200).json(enrollments);
 });
@@ -630,6 +795,7 @@ module.exports = {
   bulkDeleteCourses, // NEW EXPORT
   clearAllCourses,
   closeBatchEnrollment, // NEW EXPORT for closing enrollment for a batch
+  setBatchEnrollmentSettings,
   setEnrollmentTime,
   enrollInCourse,
   getCourseEnrollments,
